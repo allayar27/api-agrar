@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Faculty;
 use App\Models\TeacherSchedule;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -17,6 +18,8 @@ return new class extends Migration
             $table->string('name');
             $table->string('lastname');
             $table->string('fathername');
+            $table->foreignIdFor(Faculty::class)->nullable();
+            $table->enum('type',['teacher','worker']);
             $table->foreignIdFor(TeacherSchedule::class);
             $table->timestamps();
         });
