@@ -16,8 +16,9 @@ return new class extends Migration
         Schema::create('students', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->string('lastname');
-            $table->string('fathername');
+            $table->string('firstname')->nullable();
+            $table->string('secondname')->nullable();
+            $table->string('thirdname')->nullable();;
             $table->foreignIdFor(Group::class);
             $table->foreignIdFor(Faculty::class);
             $table->dateTime('start_date')->default(now());

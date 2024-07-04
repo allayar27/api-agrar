@@ -15,6 +15,7 @@ return new class extends Migration
         Schema::create('student_schedule_days', function (Blueprint $table) {
             $table->id();
             $table->enum('day', ['monday', 'tuesday', 'wednesday', 'thursday', 'friday','saturday','sunday']);
+            $table->date('date');
             $table->foreignIdFor(StudentSchedule::class);
             $table->timestamps();
         });

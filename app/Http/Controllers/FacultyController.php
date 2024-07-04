@@ -5,16 +5,14 @@ namespace App\Http\Controllers;
 use App\Models\Faculty;
 use App\Http\Requests\StoreFacultyRequest;
 use App\Http\Requests\UpdateFacultyRequest;
+use Illuminate\Support\Facades\Http;
 
 class FacultyController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index()
-    {
-        //
-    }
+
 
     /**
      * Show the form for creating a new resource.
