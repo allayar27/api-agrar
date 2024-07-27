@@ -18,7 +18,6 @@ return new class extends Migration
             $table->dateTime('startweektime');
             $table->dateTime('endweektime');
             $table->foreignIdFor(AcademicYear::class);
-            $table->foreignIdFor(Group::class);
             $table->timestamps();
         });
     }

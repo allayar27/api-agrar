@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Helpers\ErrorAddHelper;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Http;
 use GuzzleHttp\Promise\settle;
@@ -67,9 +68,7 @@ class ScheduleImportByGroup implements ShouldQueue
             DB::commit();
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error($e->getMessage());
-            Log::error($e->getTraceAsString());
-            Log::info($e->getLine());
+            ErrorAddHelper::logException($e);
             Artisan::call('queue:restart');
         }
     }
