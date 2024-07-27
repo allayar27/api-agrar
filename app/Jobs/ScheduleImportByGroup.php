@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Http;
 use GuzzleHttp\Promise\settle;
 use GuzzleHttp\Client;
 use App\Models\Building;
@@ -43,17 +44,18 @@ class ScheduleImportByGroup implements ShouldQueue
 
     private function fetchScheduleData()
     {
-        $client = new Client();
-        return $client->get(env('HEMIS_URL')."schedule-list", [
-            'headers' => [
-                'accept' => 'application/json',
-                'Authorization' => 'Bearer ' . env('HEMIS_BEARER_TOKEN'),
-            ],
-            'query' => [
-                'page' => $this->page,
-                'limit' => 200,
-            ],
-        ]);
+
+
+        $response = Http::withHeaders([
+            'accept' => 'application/json',
+            'Authorization' => 'Bearer ' . env('HEMIS_BEARER_TOKEN'),
+        ])->get(env('HEMIS_URL') . 'schedule-list', [
+                    'page' => $this->page,
+                    'limit' => 200,
+                ]);
+
+        return $response;
+
     }
 
     private function importLesson(array $item): void
