@@ -16,11 +16,11 @@ return new class extends Migration
         Schema::create('teachers', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->string('lastname');
-            $table->string('fathername');
-            $table->foreignIdFor(Faculty::class)->nullable();
-            $table->enum('type',['teacher','worker']);
+            $table->string('firstname')->nullable();
+            $table->string('secondname')->nullable();
+            $table->string('thirdname')->nullable();
             $table->foreignIdFor(TeacherSchedule::class);
+            $table->enum('kind',['employee','teacher','other','administrative' ])->default('teacher');
             $table->timestamps();
         });
     }

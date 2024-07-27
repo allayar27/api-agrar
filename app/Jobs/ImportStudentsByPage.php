@@ -35,7 +35,7 @@ class ImportStudentsByPage implements ShouldQueue
         $response = Http::withHeaders([
             'accept' => 'application/json',
             'Authorization' => 'Bearer ' . env('HEMIS_BEARER_TOKEN'),
-        ])->get("https://student.karsu.uz/rest/v1/data/student-list?page={$this->page}&limit=200");
+        ])->get(env('HEMIS_URL')."student-list?page={$this->page}&limit=200");
         if ($response->successful()) {
             $students = $response->json()['data']['items'];
             foreach ($students as $student) {

@@ -2,58 +2,51 @@
 
 namespace App\Http\Controllers;
 
+use Carbon\Carbon;
 use App\Models\Group;
 use App\Models\Faculty;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Storage;
-use App\Http\Requests\StoreGroupRequest;
-use App\Http\Requests\UpdateGroupRequest;
+use App\Models\Student;
+use Illuminate\Http\Request;
+use App\Models\StudentScheduleDay;
+use App\Http\Requests\GroupsGetRequest;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class GroupController extends Controller
 {
-    
-    public function create()
-    {
-        //
-    }
+    public function allGroups(GroupsGetRequest $request){
+        $data = $request->validated();
+        $day = request('day') ? request('day') : Carbon::today()->format('Y-m-d');
+        $perPage = request('per_page', 10);
+        $faculty = Faculty::with(['groups.groupEducationDays' => function ($query) use ($day) {
+            $query->where('day', $day);
+        }])->findOrFail($data['faculty_id']);
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(StoreGroupRequest $request)
-    {
-        //
-    }
+        $groupsData = $faculty->groups->map(function ($group) use ($day) {
+            $groupEducationDay = $group->groupeducationdays->where('day', $day)->first();
+            return [
+                'group_id' => $group->id,
+                'group_name' => $group->name,
+                'percent' => $groupEducationDay ? $groupEducationDay->come_students/ $groupEducationDay->all_students*100 : 0,
+                'come_students' => $groupEducationDay ? $groupEducationDay->come_students : 0,
+                'late_students' => $groupEducationDay ? $groupEducationDay->late_students : 0,
+            ];
+        });
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Group $group)
-    {
-        //
-    }
+        $currentPage = LengthAwarePaginator::resolveCurrentPage();
+        $paginatedGroups = new LengthAwarePaginator(
+            $groupsData->forPage($currentPage, $perPage),
+            $groupsData->count(),
+            $perPage,
+            $currentPage,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Group $group)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateGroupRequest $request, Group $group)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Group $group)
-    {
-        //
+        return $this->data([
+            'total' => $paginatedGroups->total(),
+            'per_page' => $paginatedGroups->perPage(),
+            'current_page' => $paginatedGroups->currentPage(),
+            'last_page' => $paginatedGroups->lastPage(),
+            'data' => $paginatedGroups->items(),
+        ]);
     }
 }

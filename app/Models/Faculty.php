@@ -18,4 +18,24 @@ class Faculty extends Model
     {
         return $this->hasMany(Group::class);
     }
+
+    public function students()
+    {
+        return $this->hasMany(Student::class);
+    }
+
+    public function attendances()
+    {
+        return $this->hasMany(Attendance::class);
+    }
+
+    public function  groupeducationdays()
+    {
+        return $this->hasMany(GroupEducationDays::class);
+    }
+
+    public function facultyEducationDays()
+    {
+        return $this->hasMany(FacultyEducationDays::class);
+    }
 }

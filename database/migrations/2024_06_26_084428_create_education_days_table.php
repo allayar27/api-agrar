@@ -13,12 +13,7 @@ return new class extends Migration
     {
         Schema::create('education_days', function (Blueprint $table) {
             $table->id();
-            $table->bigInteger('all_students');
-            $table->bigInteger('expected_students');
-            $table->bigInteger('come_students');
-            $table->bigInteger('late_students');
             $table->bigInteger('all_teachers');
-            $table->bigInteger('expected_teachers');
             $table->bigInteger('come_teachers');
             $table->bigInteger('late_teachers');
             $table->date('date');

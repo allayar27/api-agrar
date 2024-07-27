@@ -2,65 +2,48 @@
 
 namespace App\Http\Controllers;
 
+use Carbon\Carbon;
 use App\Models\Teacher;
-use App\Http\Requests\StoreTeacherRequest;
-use App\Http\Requests\UpdateTeacherRequest;
+use Illuminate\Http\Request;
+use App\Http\Resources\TeachersResource;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class TeacherController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function allTeachers(Request $request)
     {
-        //
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(StoreTeacherRequest $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(Teacher $teacher)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Teacher $teacher)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateTeacherRequest $request, Teacher $teacher)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Teacher $teacher)
-    {
-        //
+        $day = request('day') ? request('day') : Carbon::today()->format('Y-m-d');
+        $perPage = request('per_page', 20);
+        $teachers = Teacher::whereHas('attendances' , function ($query) use  ($day) {
+            $query->where('date', $day)->where('type', 'in');
+        })->distinct()->get();
+        $lateComers = $teachers->filter(function ($teacher) use ($day) {
+            $attendance = $teacher->attendances()->where('date', $day)->where('type', 'in')->first();
+            $time_in = Carbon::parse("9:00");
+            $attendances = $teacher->attendances()->where('date', $day)->where('type', 'in')->first();
+            return Carbon::parse($attendance->time) > $time_in;
+        });
+        $currentPage = LengthAwarePaginator::resolveCurrentPage();
+        $paginatedStudents = new LengthAwarePaginator(
+            $lateComers->forPage($currentPage, $perPage),
+            $lateComers->count(),
+            $perPage,
+            $currentPage,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'items' =>TeachersResource::collection($paginatedStudents),
+                'pagination' => [
+                    'total' => $paginatedStudents->total(),
+                    'current_page' => $paginatedStudents->currentPage(),
+                    'last_page' => $paginatedStudents->lastPage(),
+                    'per_page' => $paginatedStudents->perPage(),
+                    'total_pages' => $paginatedStudents->lastPage(),
+                ],
+            ],
+           
+        ]);
     }
 }

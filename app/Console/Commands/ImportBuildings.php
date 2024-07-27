@@ -2,19 +2,19 @@
 
 namespace App\Console\Commands;
 
+use App\Jobs\ImportBuildings as ImportBuildingsJob;
 use Illuminate\Console\Command;
-use App\Jobs\ImportStudentsByPage;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Http;
 
-class ImportStudents extends Command
+class ImportBuildings extends Command
 {
     /**
      * The name and signature of the console command.
      *
      * @var string
      */
-    protected $signature = 'app:import-students';
+    protected $signature = 'app:import-buildings';
 
     /**
      * The console command description.
@@ -31,12 +31,12 @@ class ImportStudents extends Command
         $response = Http::withHeaders([
             'accept' => 'application/json',
             'Authorization' => 'Bearer ' . env('HEMIS_BEARER_TOKEN'),
-        ])->get(env('HEMIS_URL').'student-list?page=1&limit=200');
+        ])->get(env('HEMIS_URL').'auditorium-list?page=1&limit=200');
 
         $totalPages = $response->json()['data']['pagination']['pageCount'];
         Log::info('Total pages: '. $totalPages);
         for ($page = 1; $page <= $totalPages; $page++) {
-            ImportStudentsByPage::dispatch($page);
+            ImportBuildingsJob::dispatch($page);
         }
     }
 }

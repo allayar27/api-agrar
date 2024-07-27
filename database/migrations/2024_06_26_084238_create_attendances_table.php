@@ -18,11 +18,12 @@ return new class extends Migration
             $table->id();
             $table->morphs('attendanceable');
             $table->foreignIdFor(Group::class)->nullable();
-            $table->foreignIdFor(Faculty::class);
+            $table->foreignIdFor(Faculty::class)->nullable();
             $table->enum('type',['in','out'])->default('in');
             $table->date('date');
             $table->time('time');
             $table->dateTime('date_time');
+            $table->enum('kind',['student','teacher','employee']);
             $table->foreignIdFor(Device::class);
             $table->timestamps();
         });
