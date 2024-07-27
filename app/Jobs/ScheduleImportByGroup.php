@@ -70,6 +70,7 @@ class ScheduleImportByGroup implements ShouldQueue
             Log::error($e->getMessage());
             Log::error($e->getTraceAsString());
             Log::info($e->getLine());
+            Artisan::call('queue:restart');
         }
     }
 
