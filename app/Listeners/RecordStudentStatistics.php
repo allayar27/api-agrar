@@ -37,10 +37,10 @@ class RecordStudentStatistics
             $groupIds = $group->students()->pluck('id');
             $facultyId = $attendance->faculty_id;
             $today = $attendance->date;
-            // dd($attendance);
             DB::beginTransaction();
 
             $time_in = $student->time_in($today);
+            dd($time_in, $today,$group, $student);
             dd($time_in);
             if ($time_in !== null) {
                 $attendances = Attendance::where('kind', 'student')
