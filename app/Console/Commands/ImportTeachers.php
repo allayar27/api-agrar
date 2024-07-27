@@ -2,26 +2,25 @@
 
 namespace App\Console\Commands;
 
+use App\Jobs\ImportTeachers as ImportTeachersJob;
 use Illuminate\Console\Command;
-use App\Jobs\ImportStudentsByPage;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 
-class ImportStudents extends Command
+class ImportTeachers extends Command
 {
     /**
      * The name and signature of the console command.
      *
      * @var string
      */
-    protected $signature = 'app:import-students';
+    protected $signature = 'app:import-teachers';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Command description';
+    protected $description = 'Import teachers from Hemis Api';
 
     /**
      * Execute the console command.
@@ -31,12 +30,20 @@ class ImportStudents extends Command
         $response = Http::withHeaders([
             'accept' => 'application/json',
             'Authorization' => 'Bearer ' . env('HEMIS_BEARER_TOKEN'),
-        ])->get(env('HEMIS_URL').'student-list?page=1&limit=200');
+        ])->get(env('HEMIS_URL').'employee-list?type=all&page=1&limit=10');
 
         $totalPages = $response->json()['data']['pagination']['pageCount'];
-        Log::info('Total pages: '. $totalPages);
+
         for ($page = 1; $page <= $totalPages; $page++) {
-            ImportStudentsByPage::dispatch($page);
+            ImportTeachersJob::dispatch($page);
         }
+        $this->info('Teachers imported');
+
     }
+    public function failed()
+    {
+        $this->info('');
+    }
+
 }
+

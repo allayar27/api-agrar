@@ -3,6 +3,7 @@
 namespace App\Http;
 
 use App\Http\Middleware\AlwaysAcceptJson;
+use App\Http\Middleware\LogErrors;
 use Illuminate\Foundation\Http\Kernel as HttpKernel;
 
 class Kernel extends HttpKernel
@@ -23,6 +24,7 @@ class Kernel extends HttpKernel
         \App\Http\Middleware\TrimStrings::class,
         \Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull::class,
         AlwaysAcceptJson::class,
+        LogErrors::class,
     ];
 
     /**

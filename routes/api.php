@@ -2,6 +2,11 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\MainController;
+use App\Http\Controllers\FacultyController;
+use App\Http\Controllers\StudentController;
+use App\Http\Controllers\TeacherController;
+use App\Http\Controllers\AttendanceController;
 
 /*
 |--------------------------------------------------------------------------
@@ -14,10 +19,24 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
+Route::middleware('auth:sanctum')->group(function(){
+    
 });
 
-Route::get('faculties', [App\Http\Controllers\FacultyController::class, 'import']);
-Route::get('groups', [App\Http\Controllers\GroupController::class, 'downloadFile']);
-Route::post('import-students', [App\Http\Controllers\ImportController::class, 'importStudents']);
+Route::post('attendance/add', [AttendanceController::class,'create']);
+Route::get('groups', [App\Http\Controllers\GroupController::class, 'allGroups']);
+
+
+//faculties
+
+
+Route::get('faculties', [FacultyController::class, 'allFaculties']);
+Route::get('faculties2', [FacultyController::class, 'allFaculties2']);
+Route::get('main/all',[MainController::class, 'index']);
+Route::get('main/students',[StudentController::class, 'allStudents']);
+Route::get('main/late_comers',[StudentController::class, 'lateComers']);
+Route::get('main/note_comers',[StudentController::class, 'noteComers']);
+// Route::get('main/student',[MainController::class, 'student']);
+
+Route::get('late_teachers',[TeacherController::class, 'allTeachers']);
+

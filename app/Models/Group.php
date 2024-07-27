@@ -13,4 +13,24 @@ class Group extends Model
         'hemis_id',
         'faculty_id',
     ];
+
+    public function faculty()
+    {
+        return $this->belongsTo(Faculty::class);
+    }
+
+    public function students()
+    {
+        return $this->hasMany(Student::class);
+    }
+
+    public function scheduledays()
+    {
+        return $this->hasMany(StudentScheduleDay::class);
+    }
+
+    public function groupeducationdays()
+    {
+        return $this->hasMany(GroupEducationdays::class);
+    }
 }

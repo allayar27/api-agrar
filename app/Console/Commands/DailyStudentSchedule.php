@@ -44,6 +44,6 @@ class DailyStudentSchedule extends Command
         return Http::withHeaders([
             'accept' => 'application/json',
             'Authorization' => 'Bearer ' . env('HEMIS_BEARER_TOKEN'),
-        ])->get("https://student.karsu.uz/rest/v1/data/schedule-list?page=1&limit=200");
+        ])->get(env('HEMIS_URL').'schedule-list?page=1&limit=200');
     }
 }

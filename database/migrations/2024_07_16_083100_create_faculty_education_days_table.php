@@ -1,8 +1,6 @@
 <?php
 
-use App\Models\EducationDays;
 use App\Models\Faculty;
-use App\Models\Group;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
@@ -14,15 +12,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('group_educationdays', function (Blueprint $table) {
+        Schema::create('faculty_education_days', function (Blueprint $table) {
             $table->id();
-            $table->foreignIdFor(Group::class);
-            $table->foreignIdFor(Faculty::class);
-            $table->bigInteger('all_students');
-            $table->bigInteger('come_students');
-            $table->bigInteger('late_students');
-            $table->foreignIdFor(EducationDays::class);
             $table->date('day');
+            $table->foreignIdFor(Faculty::class);
+            $table->bigInteger('all_students')->default(0);
+            $table->bigInteger('come_students')->default(0);
+            $table->bigInteger('late_students')->default(0);
             $table->timestamps();
         });
     }
@@ -32,6 +28,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('group_educationdays');
+        Schema::dropIfExists('faculty_education_days');
     }
 };
