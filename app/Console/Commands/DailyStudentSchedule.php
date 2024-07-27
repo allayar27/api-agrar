@@ -2,11 +2,12 @@
 
 namespace App\Console\Commands;
 
+use Carbon\Carbon;
 use App\Models\Group;
 use Illuminate\Console\Command;
 use App\Jobs\ScheduleImportByGroup;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Http;
 
 class DailyStudentSchedule extends Command
 {
@@ -36,7 +37,7 @@ class DailyStudentSchedule extends Command
         for ($page = 1; $page <= $totalPages; $page++) {
             ScheduleImportByGroup::dispatch($page);
         }
-        Log::info('All groups have been scheduled: {Carbon::now()}');
+        Log::info("All groups have been scheduled:". Carbon::now());
         $this->info('All groups have been scheduled');
     }
     private function fetchScheduleData()
