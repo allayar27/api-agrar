@@ -37,7 +37,7 @@ class RecordStudentStatistics
             $groupIds = $group->students()->pluck('id');
             $facultyId = $attendance->faculty_id;
             $today = $attendance->date;
-
+            dd($attendance);
             DB::beginTransaction();
 
             $time_in = $student->time_in($today);
