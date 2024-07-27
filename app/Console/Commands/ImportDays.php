@@ -29,7 +29,7 @@ class ImportDays extends Command
     public function handle()
     {
         $groups = Group::all();
-        $schedules = StudentSchedule::findOrFail(29066); 
+        $schedules = StudentSchedule::findOrFail(27); 
         foreach ($groups as $group) {
             ImportSchedulesByDayJob::dispatch($group->id,$schedules->id);
         }
