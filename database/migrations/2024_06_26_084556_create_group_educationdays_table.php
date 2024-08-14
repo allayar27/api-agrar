@@ -21,7 +21,6 @@ return new class extends Migration
             $table->bigInteger('all_students');
             $table->bigInteger('come_students');
             $table->bigInteger('late_students');
-            $table->foreignIdFor(EducationDays::class);
             $table->date('day');
             $table->timestamps();
         });

@@ -1,6 +1,7 @@
 <?php
 namespace App\Console\Commands;
 
+use App\Helpers\ErrorAddHelper;
 use App\Jobs\ImportSchedulesByDayJob;
 use App\Models\Group;
 use App\Models\StudentSchedule;
@@ -26,13 +27,17 @@ class ImportDays extends Command
     /**
      * Execute the console command.
      */
-    public function handle()
+    public function handle():void
     {
-        $groups = Group::all();
-        $schedules = StudentSchedule::findOrFail(27); 
-        foreach ($groups as $group) {
-            ImportSchedulesByDayJob::dispatch($group->id,$schedules->id);
+        try {
+            $groups = Group::all();
+            $schedules = StudentSchedule::query()->findOrFail(27);
+            foreach ($groups as $group) {
+                ImportSchedulesByDayJob::dispatch($group->id,$schedules->id);
+            }
+            Log::info('Dispatched ImportSchedulesByDayJob for all groups.');
+        }catch (\Throwable $th){
+            ErrorAddHelper::logException($th);
         }
-        Log::info('Dispatched ImportSchedulesByDayJob for all groups.');
     }
 }

@@ -1,6 +1,7 @@
 <?php
 namespace App\Jobs;
 
+use App\Helpers\ErrorAddHelper;
 use Carbon\Carbon;
 use App\Models\Group;
 use App\Models\Building;
@@ -47,9 +48,7 @@ class ImportSchedulesByDayJob implements ShouldQueue
                 $this->fetchScheduleData($group->hemis_id, $starttime, $endtime, $schedule);
             }
         } catch (\Throwable $th) {
-            Log::error('Failed to fetch schedule data for group ID: ' . $this->groupId . 'on ' . [
-                'error' => $th->getMessage()
-            ]);
+            ErrorAddHelper::logException($th);
         }
     }
 

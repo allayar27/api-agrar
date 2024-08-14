@@ -24,7 +24,6 @@ class RecordStudentStatistics
     {
         //
     }
-
     /**
      * Handle the event.
      */
@@ -41,7 +40,7 @@ class RecordStudentStatistics
 
             $time_in = $student->time_in($today);
             // dd($time_in, $today,$group, $student);
-            dd($time_in);
+//            dd($time_in);
             if ($time_in !== null) {
                 $attendances = Attendance::where('kind', 'student')
                     ->where('date', $today)
@@ -95,7 +94,6 @@ class RecordStudentStatistics
                     ]
                 );
             }
-
             DB::commit();
         } catch (\Throwable $th) {
             DB::rollBack();
