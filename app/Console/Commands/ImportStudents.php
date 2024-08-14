@@ -26,7 +26,7 @@ class ImportStudents extends Command
     /**
      * Execute the console command.
      */
-    public function handle()
+    public function handle():void
     {
         $response = Http::withHeaders([
             'accept' => 'application/json',

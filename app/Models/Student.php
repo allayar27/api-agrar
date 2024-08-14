@@ -38,7 +38,7 @@ class Student extends Model
     
     public function time_in($day)
     {
-        $day = request('day') ? Carbon::parse(request('day')) : Carbon::today();
+        $day = request('date') ? Carbon::parse(request('date')) : Carbon::today();
 
         try {
             $scheduleDay = StudentScheduleDay::where('group_id', $this->group_id)

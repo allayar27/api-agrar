@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Helpers\ErrorAddHelper;
 use App\Models\Auditorum;
 use App\Models\Building;
 use App\Models\Faculty;
@@ -51,10 +52,7 @@ class ImportBuildings implements ShouldQueue
                     DB::commit();
                 } catch (\Throwable $th) {
                     DB::rollBack();
-                    Log::error('Failed to import building: ' . $building['building']['name'], [
-                        'page' => $this->page,
-                        'error' => $th->getMessage()
-                    ]);
+                    ErrorAddHelper::logException($th);
                 }
             }
         } else {

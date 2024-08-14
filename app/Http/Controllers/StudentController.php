@@ -8,12 +8,13 @@ use App\Http\Resources\StudentsResource;
 use App\Models\Attendance;
 use App\Models\Student;
 use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class StudentController extends Controller
 {
-    public function allStudents(Request $request)
+    public function allStudents(Request $request): JsonResponse
     {
         $query = Student::query();
         if ($request->has("search")) {
@@ -43,7 +44,7 @@ class StudentController extends Controller
         ]);
     }
 
-    public function lateComers(Request $request)
+    public function lateComers(Request $request): JsonResponse
     {
         $day = $request->input('day', Carbon::today()->format('Y-m-d'));
         $perPage = $request->input('per_page', 10);
@@ -88,7 +89,7 @@ class StudentController extends Controller
         ]);
     }
 
-    public function noteComers(NoteComersRequest $request)
+    public function noteComers(NoteComersRequest $request): JsonResponse
     {
         $day = $request->input('day', Carbon::today()->format('Y-m-d'));
 
@@ -112,7 +113,7 @@ class StudentController extends Controller
 
         $absentstuden = $students->diff($comestudents);
 
-        $absentstudens = Student::whereIn('id', $absentstuden)
+        $absentstudens = Student::query()->whereIn('id', $absentstuden)
             ->paginate($request->input('per_page', 20));
 
         return response()->json([
@@ -124,6 +125,4 @@ class StudentController extends Controller
             'data' => StudentsResource::collection($absentstudens)
         ]);
     }
-
-       
 }

@@ -4,13 +4,14 @@ namespace App\Http\Controllers;
 
 use Carbon\Carbon;
 use App\Models\Teacher;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\Http\Resources\TeachersResource;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class TeacherController extends Controller
 {
-    public function allTeachers(Request $request)
+    public function allTeachers(Request $request):JsonResponse
     {
         $day = request('day') ? request('day') : Carbon::today()->format('Y-m-d');
         $perPage = request('per_page', 20);
@@ -43,7 +44,7 @@ class TeacherController extends Controller
                     'total_pages' => $paginatedStudents->lastPage(),
                 ],
             ],
-           
+
         ]);
     }
 }

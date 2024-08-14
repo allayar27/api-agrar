@@ -20,7 +20,7 @@ use App\Http\Controllers\AttendanceController;
 */
 
 Route::middleware('auth:sanctum')->group(function(){
-    
+
 });
 
 Route::post('attendance/add', [AttendanceController::class,'create']);
@@ -39,4 +39,7 @@ Route::get('main/note_comers',[StudentController::class, 'noteComers']);
 // Route::get('main/student',[MainController::class, 'student']);
 
 Route::get('late_teachers',[TeacherController::class, 'allTeachers']);
+Route::get('late_teachers',[TeacherController::class, 'allTeachers']);
+
+Route::get('lastComers',[AttendanceController::class,'lastComers']);
 
