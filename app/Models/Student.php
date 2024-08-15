@@ -35,11 +35,10 @@ class Student extends Model
         return $this->belongsTo(Faculty::class);
     }
 
-    
+
     public function time_in($day)
     {
-        $day = request('date') ? Carbon::parse(request('date')) : Carbon::today();
-
+        $day = $day ? Carbon::parse($day) : Carbon::today();
         try {
             $scheduleDay = StudentScheduleDay::where('group_id', $this->group_id)
                 ->where('date', $day->toDateString())
@@ -53,7 +52,7 @@ class Student extends Model
             }
             return $scheduleDay ? $scheduleDay->time_in : null;
         } catch (\Exception $e) {
-            ErrorAddHelper::logException($e); 
+            ErrorAddHelper::logException($e);
             return false;
         }
     }

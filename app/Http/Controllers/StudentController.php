@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\NoteComersRequest;
-use App\Http\Resources\LateComersResource;
+use App\Http\Requests\Student\LateStudentsRequest;
 use App\Http\Resources\StudentsResource;
-use App\Models\Attendance;
+use App\Models\Group;
 use App\Models\Student;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -16,7 +16,8 @@ class StudentController extends Controller
 {
     public function allStudents(Request $request): JsonResponse
     {
-        $query = Student::query();
+        $day = $request->input('day') ?? Carbon::today();
+        $query = Student::query()->with('group','faculty')->get();
         if ($request->has("search")) {
             $search = $request->input('search');
             $query->whereAny([
@@ -33,47 +34,91 @@ class StudentController extends Controller
         if ($request->has('group_id')) {
             $query->where('group_id', $request->input('group_id'));
         }
-        $students = $query->paginate($request->input('per_page', 20));
+        $students = $query->transform(function ($student) use ($day){
+            return [
+              'id' => $student->id,
+              'name' => $student->name,
+                'faculty' => [
+                    'id' => $student->faculty->id,
+                    'name' => $student->faculty->name
+                ],
+                'group' => [
+                    'id' => $student->group->id,
+                    'name' => $student->group->name
+                ],
+            ];
+        });
+        $currentPage = LengthAwarePaginator::resolveCurrentPage();
+        $pagedResult = new LengthAwarePaginator(
+            $students->forPage($currentPage, $request->input('per_page',20)),
+            $students->count(),
+            $request->input('per_page',20),
+            $currentPage,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
         return response()->json([
             'success' => true,
-            'total' => $students->total(),
-            'total_pages' => $students->lastPage(),
-            'curr_page' => $students->currentPage(),
-            'per_page' => $students->perPage(),
-            'students' => StudentsResource::collection($students)
+            'pagination' => [
+                'total' => $pagedResult->total(),
+                'current_page' => $pagedResult->currentPage(),
+                'last_page' => $pagedResult->lastPage(),
+                'per_page' => $pagedResult->perPage(),
+                'total_pages' => $pagedResult->lastPage(),
+            ],
+            'data' => $pagedResult->items(),
+
         ]);
     }
 
-    public function lateComers(Request $request): JsonResponse
+    public function lateComers(LateStudentsRequest $request)
     {
+
         $day = $request->input('day', Carbon::today()->format('Y-m-d'));
         $perPage = $request->input('per_page', 10);
 
-        $students = Student::whereHas('attendances', function ($query) use ($day) {
-            $query->where('date', $day)->where('type', 'in');
-        })->distinct()->get();
-        if ($request->has('faculty_id')) {
-            $students = $students->where('faculty_id', $request->input('faculty_id'));
-        }
-        if ($request->has('group_id')) {
-            $students = $students->where('group_id', $request->input('group_id'));
-        }
-        $lateComers = $students->filter(function ($student) use ($day) {
-            $time_in = $student->time_in($day);
-            if ($time_in) {
-                $attendance = Attendance::where('attendanceable_id', $student->id)
-                    ->where('date', $day)
-                    ->where('type', 'in')
-                    ->first();
-                return $attendance->time > $time_in;
+        $groups = Group::with([
+            'groupEducationDays' => function ($query) use ($day) {
+                $query->where('day', $day);
+            },
+            'students.attendances' => function ($query) use ($day) {
+                $query->where('date', $day);
             }
-            return false;
+        ])->withCount('students')->where('faculty_id', $request->faculty_id)->get();
+
+        $result = $groups->map(function ($group) use ($day) {
+            $educationDay = $group->groupEducationDays->first();
+            $totalStudents = $group->students_count ?? 0;
+            $presentStudents = $educationDay->come_students ?? 0;
+
+            $lateComers = [];
+
+            foreach ($group->students as $student) {
+                $attendance = $student->attendances->first();
+                if ($attendance && $attendance->time > $attendance->user->time_in($day)) {
+                    $late = Carbon::parse($attendance->time)->diffInMinutes(Carbon::parse($attendance->user->time_in($day)));
+                    $lateComers[] = [
+                        'id' => $student->id,
+                        'name' => $student->name,
+                        'time' => $attendance->time,
+                        'late' => Carbon::parse($late)->format('i:s')
+                    ];
+                }
+            }
+
+            return [
+                'group_id' => $group->id,
+                'group_name' => $group->name,
+                'total_students' => $totalStudents,
+                'present_students' => $presentStudents,
+                'late_comers_count' => count($lateComers),
+                'late_comers' => $lateComers,
+            ];
         });
 
         $currentPage = LengthAwarePaginator::resolveCurrentPage();
-        $paginatedStudents = new LengthAwarePaginator(
-            $lateComers->forPage($currentPage, $perPage),
-            $lateComers->count(),
+        $pagedResult = new LengthAwarePaginator(
+            $result->forPage($currentPage, $perPage),
+            $result->count(),
             $perPage,
             $currentPage,
             ['path' => $request->url(), 'query' => $request->query()]
@@ -81,48 +126,75 @@ class StudentController extends Controller
 
         return response()->json([
             'success' => true,
-            'total' => $paginatedStudents->total(),
-            'total_pages' => $paginatedStudents->lastPage(),
-            'curr_page' => $paginatedStudents->currentPage(),
-            'per_page' => $paginatedStudents->perPage(),
-            'data' => LateComersResource::collection($paginatedStudents)
+            'pagination' => [
+                'total' => $pagedResult->total(),
+                'current_page' => $pagedResult->currentPage(),
+                'last_page' => $pagedResult->lastPage(),
+                'per_page' => $pagedResult->perPage(),
+                'total_pages' => $pagedResult->lastPage(),
+            ],
+            'data' => $pagedResult->items(),
+
         ]);
+
     }
 
     public function noteComers(NoteComersRequest $request): JsonResponse
     {
+
         $day = $request->input('day', Carbon::today()->format('Y-m-d'));
+        $perPage = $request->input('per_page', 10);
 
-        $studentsQuery = Student::query();
+        $groups = Group::with([
+            'students.attendances' => function ($query) use ($day) {
+                $query->where('date', $day);
+            }
+        ])->withCount('students')->where('faculty_id', $request->faculty_id)->get();
 
-        if ($request->has('faculty_id')) {
-            $studentsQuery->where('faculty_id', $request->input('faculty_id'));
-        }
+        $result = $groups->map(function ($group) use ($day) {
+            $totalStudents = $group->students_count ?? 0;
+            $absentStudents = [];
+            foreach ($group->students as $student) {
+                $attendance = $student->attendances->first();
+                if (!$attendance) {
+                    $absentStudents[] = [
+                        'id' => $student->id,
+                        'name' => $student->name,
+                    ];
+                }
+            }
 
-        if ($request->has('group_id')) {
-            $studentsQuery->where('group_id', $request->input('group_id'));
-        }
+            return [
+                'group_id' => $group->id,
+                'group_name' => $group->name,
+                'total_students' => $totalStudents,
+                'absent_students_count' => count($absentStudents),
+                'absent_students' => $absentStudents,
+            ];
+        });
 
-        $students = $studentsQuery->pluck('id');
-
-        $comestudents = Attendance::where('date', $day)
-            ->where('type', 'in')
-            ->where('kind', 'student')
-            ->distinct()
-            ->pluck('attendanceable_id');
-
-        $absentstuden = $students->diff($comestudents);
-
-        $absentstudens = Student::query()->whereIn('id', $absentstuden)
-            ->paginate($request->input('per_page', 20));
+        $currentPage = LengthAwarePaginator::resolveCurrentPage();
+        $pagedResult = new LengthAwarePaginator(
+            $result->forPage($currentPage, $perPage),
+            $result->count(),
+            $perPage,
+            $currentPage,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
 
         return response()->json([
             'success' => true,
-            'total' => $absentstudens->total(),
-            'total_pages' => $absentstudens->lastPage(),
-            'curr_page' => $absentstudens->currentPage(),
-            'per_page' => $absentstudens->perPage(),
-            'data' => StudentsResource::collection($absentstudens)
+            'pagination' => [
+                'total' => $pagedResult->total(),
+                'current_page' => $pagedResult->currentPage(),
+                'last_page' => $pagedResult->lastPage(),
+                'per_page' => $pagedResult->perPage(),
+                'total_pages' => $pagedResult->lastPage(),
+            ],
+            'data' => $pagedResult->items(),
+
         ]);
+
+
     }
 }

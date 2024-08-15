@@ -2,49 +2,62 @@
 
 namespace App\Http\Controllers;
 
-use Carbon\Carbon;
 use App\Models\Teacher;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use App\Http\Resources\TeachersResource;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class TeacherController extends Controller
 {
-    public function allTeachers(Request $request):JsonResponse
+    public function allTeachers(Request $request): JsonResponse
     {
         $day = request('day') ? request('day') : Carbon::today()->format('Y-m-d');
         $perPage = request('per_page', 20);
-        $teachers = Teacher::whereHas('attendances' , function ($query) use  ($day) {
-            $query->where('date', $day)->where('type', 'in');
-        })->distinct()->get();
-        $lateComers = $teachers->filter(function ($teacher) use ($day) {
-            $attendance = $teacher->attendances()->where('date', $day)->where('type', 'in')->first();
-            $time_in = Carbon::parse("9:00");
-            $attendances = $teacher->attendances()->where('date', $day)->where('type', 'in')->first();
-            return Carbon::parse($attendance->time) > $time_in;
+        $time_in = Carbon::parse("9:00");
+
+        $teachers = Teacher::whereHas('attendances', function ($query) use ($day, $time_in) {
+            $query->where('date', $day)
+                ->where('type', 'in')
+                ->whereTime('time', '>', $time_in)->orderBy('time','DESC');
+        })->with(['attendances' => function ($query) use ($day, $time_in) {
+            $query->where('date', $day)
+                ->where('type', 'in')
+                ->whereTime('time', '>', $time_in);
+        }])->distinct()->get();
+
+        $lateComers = $teachers->map(function ($teacher) use ($time_in) {
+            $attendance = $teacher->attendances->first();
+            return [
+                'id' => $teacher->id,
+                'name' => $teacher->name,
+                'time' => $attendance->time,
+                'late' => Carbon::parse($attendance->time)->diffInMinutes($time_in)
+            ];
         });
+
         $currentPage = LengthAwarePaginator::resolveCurrentPage();
-        $paginatedStudents = new LengthAwarePaginator(
+        $paginatedLateComers = new LengthAwarePaginator(
             $lateComers->forPage($currentPage, $perPage),
             $lateComers->count(),
             $perPage,
             $currentPage,
-            ['path' => $request->url(), 'query' => $request->query()]
+            ['path' => request()->url(), 'query' => request()->query()]
         );
+
         return response()->json([
             'success' => true,
             'data' => [
-                'items' =>TeachersResource::collection($paginatedStudents),
+                'items' => $paginatedLateComers->items(),
                 'pagination' => [
-                    'total' => $paginatedStudents->total(),
-                    'current_page' => $paginatedStudents->currentPage(),
-                    'last_page' => $paginatedStudents->lastPage(),
-                    'per_page' => $paginatedStudents->perPage(),
-                    'total_pages' => $paginatedStudents->lastPage(),
+                    'total' => $paginatedLateComers->total(),
+                    'current_page' => $paginatedLateComers->currentPage(),
+                    'last_page' => $paginatedLateComers->lastPage(),
+                    'per_page' => $paginatedLateComers->perPage(),
+                    'total_pages' => $paginatedLateComers->lastPage(),
                 ],
             ],
-
         ]);
+
     }
 }
