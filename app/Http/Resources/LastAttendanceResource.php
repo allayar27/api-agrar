@@ -20,6 +20,10 @@ class LastAttendanceResource extends JsonResource
                 'id' => $this->user->id,
                 'name' => $this->user->name
             ],
+            'faculty' => [
+                'id' => $this->faculty->id,
+                'name' => $this->faculty->name
+            ],
             'time' => $this->time,
             'type' => $this->type,
             'kind' => $this->kind
