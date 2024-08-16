@@ -36,10 +36,11 @@ Route::get('main/all',[MainController::class, 'index']);
 Route::get('main/students',[StudentController::class, 'allStudents']);
 Route::get('main/late_comers',[StudentController::class, 'lateComers']);
 Route::get('main/note_comers',[StudentController::class, 'noteComers']);
+Route::get('student/latest/{id}',[StudentController::class, 'studentAttendance']);
 // Route::get('main/student',[MainController::class, 'student']);
 
 Route::get('late_teachers',[TeacherController::class, 'allTeachers']);
-Route::get('late_teachers',[TeacherController::class, 'allTeachers']);
+Route::get('teachers/days',[TeacherController::class, 'getMonthlyStatistics']);
 
 Route::get('lastComers',[AttendanceController::class,'lastComers']);
 
