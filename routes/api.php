@@ -36,6 +36,7 @@ Route::get('main/all',[MainController::class, 'index']);
 Route::get('main/students',[StudentController::class, 'allStudents']);
 Route::get('main/late_comers',[StudentController::class, 'lateComers']);
 Route::get('main/note_comers',[StudentController::class, 'noteComers']);
+Route::get('monthly',[StudentController::class, 'monthly']);
 Route::get('student/latest/{id}',[StudentController::class, 'studentAttendance']);
 // Route::get('main/student',[MainController::class, 'student']);
 
