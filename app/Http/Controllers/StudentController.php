@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\NoteComersRequest;
 use App\Http\Requests\Student\LateStudentsRequest;
-use App\Http\Resources\StudentsResource;
 use App\Models\Group;
 use App\Models\Student;
 use Carbon\Carbon;
@@ -17,7 +16,7 @@ class StudentController extends Controller
     public function allStudents(Request $request): JsonResponse
     {
         $day = $request->input('day') ?? Carbon::today();
-        $query = Student::query()->with('group','faculty')->get();
+        $query = Student::query()->with('group', 'faculty');
         if ($request->has("search")) {
             $search = $request->input('search');
             $query->whereAny([
@@ -34,10 +33,11 @@ class StudentController extends Controller
         if ($request->has('group_id')) {
             $query->where('group_id', $request->input('group_id'));
         }
-        $students = $query->transform(function ($student) use ($day){
+        $query->get();
+        $students = $query->transform(function ($student) use ($day) {
             return [
-              'id' => $student->id,
-              'name' => $student->name,
+                'id' => $student->id,
+                'name' => $student->name,
                 'faculty' => [
                     'id' => $student->faculty->id,
                     'name' => $student->faculty->name
@@ -50,9 +50,9 @@ class StudentController extends Controller
         });
         $currentPage = LengthAwarePaginator::resolveCurrentPage();
         $pagedResult = new LengthAwarePaginator(
-            $students->forPage($currentPage, $request->input('per_page',20)),
+            $students->forPage($currentPage, $request->input('per_page', 20)),
             $students->count(),
-            $request->input('per_page',20),
+            $request->input('per_page', 20),
             $currentPage,
             ['path' => $request->url(), 'query' => $request->query()]
         );
@@ -70,7 +70,7 @@ class StudentController extends Controller
         ]);
     }
 
-    public function lateComers(LateStudentsRequest $request)
+    public function lateComers(LateStudentsRequest $request): JsonResponse
     {
 
         $day = $request->input('day', Carbon::today()->format('Y-m-d'));
@@ -193,6 +193,41 @@ class StudentController extends Controller
             ],
             'data' => $pagedResult->items(),
 
+        ]);
+
+    }
+
+    public function studentAttendance(int $id): JsonResponse
+    {
+        $student = Student::query()
+            ->with([
+                'attendances' => function ($query) {
+                    $query->orderBy('id', 'DESC')->take(1);
+                },
+                'group',
+                'faculty'
+            ])
+            ->findOrFail($id);
+        $lastAttendance = $student->attendances->first();
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'student' => [
+                    'id' => $student->id,
+                    'name' => $student->name,
+                    'group' => [
+                        'id' => $student->group ? $student->group->id : null,
+                        'name' => $student->group ? $student->group->name : null,
+                    ],
+                    'faculty' => $student->faculty ? $student->faculty->name : null,
+                    'last_attendance' => $lastAttendance ? [
+                        'date' => $lastAttendance->date,
+                        'time' => $lastAttendance->time,
+                        'type' => $lastAttendance->type,
+                        'device_id' => $lastAttendance->device_id
+                    ] : null,
+                ]
+            ]
         ]);
 
 

@@ -7,6 +7,14 @@ use App\Helpers\ErrorAddHelper;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
+/**
+ * @property string $name
+ * @property string $firstname
+ * @property string $secondname
+ * @property string $thirdname
+ * @property Group $group_id
+ * @property Faculty $faculty_id
+ */
 class Student extends Model
 {
     use HasFactory;
