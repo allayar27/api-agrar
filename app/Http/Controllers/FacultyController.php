@@ -34,7 +34,7 @@ class FacultyController extends Controller
             ];
         });
 
-        return $this->data([
+        return response()->json([
             'success' => true,
             'total' => $faculties->count(),
             'data' => $results,
