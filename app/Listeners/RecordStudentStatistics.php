@@ -14,6 +14,7 @@ use App\Models\FacultyEducationDays;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class RecordStudentStatistics
 {
@@ -38,7 +39,7 @@ class RecordStudentStatistics
             $today = $attendance->date;
             DB::beginTransaction();
 
-            $time_in = $student->time_in($today);
+            $time_in = Carbon::parse('09:00');
 
             if ($time_in !== null) {
                 $attendances = Attendance::where('kind', 'student')
