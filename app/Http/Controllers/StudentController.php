@@ -16,7 +16,7 @@ class StudentController extends Controller
     public function allStudents(Request $request): JsonResponse
     {
         $day = $request->input('day') ?? Carbon::today();
-        $query = Student::query()->with('group', 'faculty');
+        $query = Student::query();
         if ($request->has("search")) {
             $search = $request->input('search');
             $query->whereAny([
@@ -33,8 +33,8 @@ class StudentController extends Controller
         if ($request->has('group_id')) {
             $query->where('group_id', $request->input('group_id'));
         }
-        $query->get();
-        $students = $query->transform(function ($student) use ($day) {
+        $students = $query->with('group', 'faculty')->get();
+        $students = $students->map(function ($student) use ($day) {
             return [
                 'id' => $student->id,
                 'name' => $student->name,
