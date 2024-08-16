@@ -78,7 +78,7 @@ class TeacherController extends Controller
                 'come_teachers',
                 'late_teachers',
                 DB::raw('((come_teachers / all_teachers) * 100) as come_percentage'),
-                DB::raw('((come_teachers / all_teachers) * 100) as not_come_percentage'),
+                DB::raw('(((all_teachers - come_teachers) / all_teachers) * 100) as not_come_percentage'),
                 DB::raw('((late_teachers / all_teachers) * 100) as late_percentage')
             )
             ->whereBetween('date', [$startDate, $endDate])->orderBy('date','Desc')
