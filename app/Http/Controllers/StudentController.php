@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\NoteComersRequest;
 use App\Http\Requests\Student\LateStudentsRequest;
 use App\Models\Group;
+use App\Models\GroupEducationdays;
 use App\Models\Student;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -228,6 +229,42 @@ class StudentController extends Controller
                     ] : null,
                 ]
             ]
+        ]);
+
+
+    }
+
+    public function monthly(Request $request)
+    {
+        $month = request('month', Carbon::now()->format('Y-m'));
+        $daysInMonth = Carbon::parse($month)->daysInMonth;
+        $startOfMonth = Carbon::parse($month)->startOfMonth();
+        $endOfMonth = Carbon::parse($month)->endOfMonth();
+
+        $allStudents = Student::count();
+
+        $statistics = collect();
+
+        for ($day = $startOfMonth; $day->lte($endOfMonth); $day->addDay()) {
+            $dayString = $day->format('Y-m-d');
+
+            // Shu kunga kelgan va kech qolgan studentlar sonini hisoblash
+            $comeStudents = GroupEducationdays::where('day', $dayString)->sum('come_students');
+            $lateStudents = GroupEducationdays::where('day', $dayString)->sum('late_students');
+
+            $statistics->push([
+                'day' => $dayString,
+                'all_students' => $allStudents,
+                'come_students' => $comeStudents,
+                'late_students' => $lateStudents,
+                'come_percentage' => $allStudents > 0 ? ($comeStudents / $allStudents) * 100 : 0,
+                'late_percentage' => $allStudents > 0 ? ($lateStudents / $allStudents) * 100 : 0,
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $statistics,
         ]);
 
 
