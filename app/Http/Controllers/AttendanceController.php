@@ -114,9 +114,9 @@ class AttendanceController extends Controller
 
     public function latest():JsonResponse
     {
-        $latest = Attendance::query()->orderBy('id', 'desc')->take(1)->get();
+        $latest = Attendance::query()->orderBy('id', 'desc')->take(1)->first();
         return response()->json([
-            'data' => $latest->date_time
+            'data' => $latest['date_time']
         ]);
     }
 }
