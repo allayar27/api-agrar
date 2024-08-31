@@ -21,15 +21,15 @@ class AttendanceController extends Controller
     public function create(StoreAttendanceRequest $request): JsonResponse
     {
         $data = $request->validated();
-        $id = $data['id'];
+        $id = $data['EmployeeID'];
         DB::beginTransaction();
         try {
-            if ($data['kind'] == 'student') {
-                $student = Student::query()->where('hemis_id','=', $id)->first();
+            if ($data['PersonGroup'] == 'student') {
+                $student = Student::query()->where('hemis_id', '=', $id)->first();
                 $attendance = $this->createAttendance($student, $data, 'student');
                 event(new StudentAttendanceCreated($attendance));
-            } elseif ($data['kind'] == 'teacher' || $data['kind'] == 'employee') {
-                $teacher = Teacher::query()->where('hemis_id',$id)->first();
+            } elseif ($data['PersonGroup'] == 'teacher' || $data['PersonGroup'] == 'employee') {
+                $teacher = Teacher::query()->where('hemis_id', $id)->first();
                 $attendance = $this->createAttendance($teacher, $data, 'teacher');
                 event(new TeacherAttendanceCreated($attendance));
             }
@@ -48,12 +48,12 @@ class AttendanceController extends Controller
 
     private function createAttendance($entity, $data, $kind)
     {
-        $device = Device::query()->where('name','=',$data['device_name'])->first();
+        $device = Device::query()->where('name', '=', $data['DeviceName'])->first();
         $attendanceData = [
-            'date' => $data['date'],
-            'time' => $data['time'],
+            'date' => $data['AccessDate'],
+            'time' => $data['AccessTime'],
             'type' => $device->type,
-            'date_time' => $data['date'] . ' ' . $data['time'],
+            'date_time' => $data['AccessDate'] . ' ' . $data['AccessTime'],
             'kind' => $kind,
             'device_id' => $device->id,
         ];
@@ -71,7 +71,7 @@ class AttendanceController extends Controller
      * @param Request $request
      * @return JsonResponse
      */
-    public function lastComers(Request $request):JsonResponse
+    public function lastComers(Request $request): JsonResponse
     {
         $day = $request->get('day') ?? Carbon::today();
         $query = Attendance::with(['group', 'faculty'])
@@ -112,7 +112,7 @@ class AttendanceController extends Controller
         ]);
     }
 
-    public function latest():JsonResponse
+    public function latest(): JsonResponse
     {
         $latest = Attendance::query()->orderBy('id', 'desc')->take(1)->first();
         return response()->json([
