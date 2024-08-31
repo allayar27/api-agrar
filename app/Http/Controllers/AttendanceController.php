@@ -21,37 +21,36 @@ class AttendanceController extends Controller
 {
     public function create(StoreAttendanceRequest $request)
     {
-        $data = $request->validated();
+        $result = $request->validated();
 
-        Log::info('info' , $data['data']);
-//        $i = 0;
-//        foreach ($data['data'] as  $value) {
-//            $i++;
-//        }
-//        Log::log('i' , $i);
-//        $data = $request->validated();
-//        $id = $data['EmployeeID'];
-//        DB::beginTransaction();
-//        try {
-//            if ($data['PersonGroup'] == 'student') {
-//                $student = Student::query()->where('hemis_id', '=', $id)->first();
-//                $attendance = $this->createAttendance($student, $data, 'student');
-//                event(new StudentAttendanceCreated($attendance));
-//            } elseif ($data['PersonGroup'] == 'teacher' || $data['PersonGroup'] == 'employee') {
-//                $teacher = Teacher::query()->where('hemis_id', $id)->first();
-//                $attendance = $this->createAttendance($teacher, $data, 'teacher');
-//                event(new TeacherAttendanceCreated($attendance));
-//            }
-//            DB::commit();
-//        } catch (Exception $e) {
-//            DB::rollBack();
-//            ErrorAddHelper::logException($e);
-//            return response()->json([
-//                'error' => 'An error occurred while recording attendance.',
-//                'details' => $e->getMessage(),
-//                'line' => $e->getLine(),
-//            ], $e->getCode() ?: 500);
-//        }
+        Log::info('info' , $result['data']);
+
+        DB::beginTransaction();
+
+        foreach ($result['data'] as $data) {
+            $id = $data['EmployeeID'];
+            try {
+                if ($data['PersonGroup'] == 'student') {
+                    $student = Student::query()->where('hemis_id', '=', $id)->first();
+                    $attendance = $this->createAttendance($student, $data, 'student');
+                    event(new StudentAttendanceCreated($attendance));
+                } elseif ($data['PersonGroup'] == 'teacher' || $data['PersonGroup'] == 'employee') {
+                    $teacher = Teacher::query()->where('hemis_id', $id)->first();
+                    $attendance = $this->createAttendance($teacher, $data, 'teacher');
+                    event(new TeacherAttendanceCreated($attendance));
+                }
+                DB::commit();
+            } catch (Exception $e) {
+                DB::rollBack();
+                ErrorAddHelper::logException($e);
+                return response()->json([
+                    'error' => 'An error occurred while recording attendance.',
+                    'details' => $e->getMessage(),
+                    'line' => $e->getLine(),
+                ], $e->getCode() ?: 500);
+            }
+        }
+
         return $this->success('Attendance created successfully', 201);
     }
 
