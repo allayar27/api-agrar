@@ -16,7 +16,8 @@ return new class extends Migration
             $table->id();
             $table->string('name')->unique();
             $table->foreignIdFor(Building::class);
-            $table->enum('type',['enter','exit']);
+            $table->enum('type',['in','out']);
+            $table->text('description')->nullable();
             $table->timestamps();
         });
     }

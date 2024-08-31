@@ -16,6 +16,7 @@ return new class extends Migration
         Schema::create('teachers', function (Blueprint $table) {
             $table->id();
             $table->string('name');
+            $table->bigInteger('hemis_id')->unique();
             $table->string('firstname')->nullable();
             $table->string('secondname')->nullable();
             $table->string('thirdname')->nullable();
