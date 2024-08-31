@@ -15,18 +15,18 @@ class StoreAttendanceRequest extends FormRequest
     public function rules()
     {
         return [
-            'id' => 'required',
-            'time' => 'required',
-            'kind' =>'required|in:student,teacher',
-            'date' => 'required|date',
-            'device_name' => 'required|string|exists:devices,name',
+            'EmployeeID' => 'required',
+            'AccessTime' => 'required',
+            'PersonGroup' =>'required|in:student,teacher',
+            'AccessDate' => 'required|date',
+            'DeviceName' => 'required|string|exists:devices,name',
         ];
     }
 
     public function withValidator($validator)
     {
         $validator->after(function ($validator) {
-            if (!$this->idExistsInEitherTable($this->id)) {
+            if (!$this->idExistsInEitherTable($this->EmployeeID)) {
                 $validator->errors()->add('id', 'The id must exist in either students or teachers table.');
             }
         });
