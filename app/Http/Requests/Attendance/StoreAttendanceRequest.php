@@ -17,11 +17,9 @@ class StoreAttendanceRequest extends FormRequest
         return [
             'id' => 'required',
             'time' => 'required',
-            'type' => 'required|in:in,out',
             'kind' =>'required|in:student,teacher',
             'date' => 'required|date',
-            'score' => 'required|numeric',
-            'device_id' => 'required',
+            'device_name' => 'required|string|exists:devices,name',
         ];
     }
 
@@ -36,8 +34,8 @@ class StoreAttendanceRequest extends FormRequest
 
     protected function idExistsInEitherTable($id)
     {
-        $studentExists = \App\Models\Student::where('id', $id)->exists();
-        $teacherExists = \App\Models\Teacher::where('id', $id)->exists();
+        $studentExists = \App\Models\Student::where('hemis_id', $id)->exists();
+        $teacherExists = \App\Models\Teacher::where('hemis_id', $id)->exists();
 
         return $studentExists || $teacherExists;
     }

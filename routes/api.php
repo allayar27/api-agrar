@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\DeviceController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\MainController;
@@ -45,3 +46,4 @@ Route::get('teachers/days',[TeacherController::class, 'getMonthlyStatistics']);
 
 Route::get('lastComers',[AttendanceController::class,'lastComers']);
 
+Route::post('device/add',[DeviceController::class,'create']);

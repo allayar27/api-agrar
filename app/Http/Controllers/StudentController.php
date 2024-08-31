@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\NoteComersRequest;
 use App\Http\Requests\Student\LateStudentsRequest;
+use App\Models\Building;
 use App\Models\Group;
 use App\Models\GroupEducationdays;
 use App\Models\Student;
@@ -210,6 +211,7 @@ class StudentController extends Controller
             ])
             ->findOrFail($id);
         $lastAttendance = $student->attendances->first();
+        $building = Building::query()->findOrFail($lastAttendance->device_id);
         return response()->json([
             'success' => true,
             'data' => [
@@ -225,7 +227,9 @@ class StudentController extends Controller
                         'date' => $lastAttendance->date,
                         'time' => $lastAttendance->time,
                         'type' => $lastAttendance->type,
-                        'device_id' => $lastAttendance->device_id
+                        'building' => [
+                            'name' => $building->name,
+                        ]
                     ] : null,
                 ]
             ]

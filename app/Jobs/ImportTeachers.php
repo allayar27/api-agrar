@@ -39,20 +39,20 @@ class ImportTeachers implements ShouldQueue
         if ($response->successful()) {
             $teachers = $response->json()['data']['items'];
             foreach ($teachers as $teacher) {
-                
+
                 DB::beginTransaction();
                 try {
                     $teacherschedule = TeacherSchedule::updateOrCreate([
                         'name' => $teacher['employmentStaff']['name'],
                     ]);
                     Teacher::updateOrCreate([
+                        'hemis_id' =>$teacher['id'],
                         'name' => $teacher['full_name'],
                         'firstname' => $teacher['first_name'],
                         'secondname' => $teacher['second_name'],
                         'thirdname' => $teacher['third_name'],
                         'teacher_schedule_id' => $teacherschedule->id,
                     ]);
-
                     DB::commit();
                 } catch (\Throwable $th) {
                     DB::rollBack();

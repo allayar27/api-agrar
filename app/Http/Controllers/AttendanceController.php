@@ -7,6 +7,7 @@ use App\Events\TeacherAttendanceCreated;
 use App\Helpers\ErrorAddHelper;
 use App\Http\Requests\Attendance\StoreAttendanceRequest;
 use App\Models\Attendance;
+use App\Models\Device;
 use App\Models\Student;
 use App\Models\Teacher;
 use Carbon\Carbon;
@@ -24,11 +25,11 @@ class AttendanceController extends Controller
         DB::beginTransaction();
         try {
             if ($data['kind'] == 'student') {
-                $student = Student::query()->findOrFail($id);
+                $student = Student::query()->where('hemis_id','=', $id)->first();
                 $attendance = $this->createAttendance($student, $data, 'student');
                 event(new StudentAttendanceCreated($attendance));
-            } elseif ($data['kind'] == 'teacher') {
-                $teacher = Teacher::query()->findOrFail($id);
+            } elseif ($data['kind'] == 'teacher' || $data['kind'] == 'employee') {
+                $teacher = Teacher::query()->where('hemis_id',$id)->first();
                 $attendance = $this->createAttendance($teacher, $data, 'teacher');
                 event(new TeacherAttendanceCreated($attendance));
             }
@@ -47,13 +48,14 @@ class AttendanceController extends Controller
 
     private function createAttendance($entity, $data, $kind)
     {
+        $device = Device::query()->where('name','=',$data['device_name'])->first();
         $attendanceData = [
             'date' => $data['date'],
             'time' => $data['time'],
-            'type' => $data['type'],
+            'type' => $device->type,
             'date_time' => $data['date'] . ' ' . $data['time'],
             'kind' => $kind,
-            'device_id' => $data['device_id'],
+            'device_id' => $device->id,
         ];
 
         if ($kind === 'student' && $entity->group && $entity->group->faculty) {
