@@ -31,13 +31,15 @@ class AttendanceController extends Controller
             $id = $data['EmployeeID'];
             try {
                 if ($data['PersonGroup'] == 'student') {
-                    $student = Student::query()->where('hemis_id', '=', $id)->first();
-                    $attendance = $this->createAttendance($student, $data, 'student');
-                    event(new StudentAttendanceCreated($attendance));
+                    Log::info('info' , $data['PersonGroup']);
+//                    $student = Student::query()->where('hemis_id', '=', $id)->first();
+//                    $attendance = $this->createAttendance($student, $data, 'student');
+//                    event(new StudentAttendanceCreated($attendance));
                 } elseif ($data['PersonGroup'] == 'teacher' || $data['PersonGroup'] == 'employee') {
-                    $teacher = Teacher::query()->where('hemis_id', $id)->first();
-                    $attendance = $this->createAttendance($teacher, $data, 'teacher');
-                    event(new TeacherAttendanceCreated($attendance));
+                    Log::info('info' , $data['PersonGroup']);
+//                    $teacher = Teacher::query()->where('hemis_id', $id)->first();
+//                    $attendance = $this->createAttendance($teacher, $data, 'teacher');
+//                    event(new TeacherAttendanceCreated($attendance));
                 }
                 DB::commit();
             } catch (Exception $e) {
