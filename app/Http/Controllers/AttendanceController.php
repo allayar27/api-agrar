@@ -19,9 +19,9 @@ use Illuminate\Support\Facades\Log;
 
 class AttendanceController extends Controller
 {
-    public function create(Request $request)
+    public function create(StoreAttendanceRequest $request)
     {
-        $data = $request->all();
+        $data = $request->validated();
 
         $i = 0;
         foreach ($data['data'] as  $value) {
