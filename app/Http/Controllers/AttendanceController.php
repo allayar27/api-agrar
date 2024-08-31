@@ -36,8 +36,8 @@ class AttendanceController extends Controller
 //                    $attendance = $this->createAttendance($student, $data, 'student');
 //                    event(new StudentAttendanceCreated($attendance));
                 } elseif ($data['PersonGroup'] == 'teacher' || $data['PersonGroup'] == 'employee') {
-                    Log::log('info' , $data['PersonGroup']);
-//                    $teacher = Teacher::query()->where('hemis_id', $id)->first();
+                    $teacher = Teacher::query()->where('hemis_id', $id)->first();
+                    Log::log('info' , $teacher);
 //                    $attendance = $this->createAttendance($teacher, $data, 'teacher');
 //                    event(new TeacherAttendanceCreated($attendance));
                 }
