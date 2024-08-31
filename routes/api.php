@@ -45,5 +45,6 @@ Route::get('late_teachers',[TeacherController::class, 'allTeachers']);
 Route::get('teachers/days',[TeacherController::class, 'getMonthlyStatistics']);
 
 Route::get('lastComers',[AttendanceController::class,'lastComers']);
+Route::get('latest',[AttendanceController::class,'latest']);
 
 Route::post('device/add',[DeviceController::class,'create']);
