@@ -15,11 +15,13 @@ use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class AttendanceController extends Controller
 {
-    public function create(StoreAttendanceRequest $request): JsonResponse
+    public function create(Request $request)
     {
+        Log::info('request',$request->all());
         $data = $request->validated();
         $id = $data['EmployeeID'];
         DB::beginTransaction();
