@@ -23,10 +23,11 @@ class AttendanceController extends Controller
     {
         $data = $request->validated();
 
-        $i = 0;
-        foreach ($data['data'] as  $value) {
-            $i++;
-        }
+        Log::info('info' , $data['data']);
+//        $i = 0;
+//        foreach ($data['data'] as  $value) {
+//            $i++;
+//        }
 //        Log::log('i' , $i);
 //        $data = $request->validated();
 //        $id = $data['EmployeeID'];
