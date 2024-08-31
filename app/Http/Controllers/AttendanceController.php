@@ -32,16 +32,17 @@ class AttendanceController extends Controller
             try {
                 if ($data['PersonGroup'] == 'student') {
                     Log::log('info' , $data['PersonGroup']);
-//                    $student = Student::query()->where('hemis_id', '=', $id)->first();
-//                    $attendance = $this->createAttendance($student, $data, 'student');
-//                    event(new StudentAttendanceCreated($attendance));
+                    $student = Student::query()->where('hemis_id', '=', $id)->first();
+                    if ($student) {
+                        $attendance = $this->createAttendance($student, $data, 'student');
+                        event(new StudentAttendanceCreated($attendance));
+                    }
                 } elseif ($data['PersonGroup'] == 'teacher' || $data['PersonGroup'] == 'employee') {
                     $teacher = Teacher::query()->where('hemis_id', $id)->first();
                     if($teacher){
-                        Log::log('info' , $teacher);
+                        $attendance = $this->createAttendance($teacher, $data, 'teacher');
+                        event(new TeacherAttendanceCreated($attendance));
                     }
-//                    $attendance = $this->createAttendance($teacher, $data, 'teacher');
-//                    event(new TeacherAttendanceCreated($attendance));
                 }
                 DB::commit();
             } catch (Exception $e) {
