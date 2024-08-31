@@ -22,7 +22,7 @@ class AttendanceController extends Controller
     public function create(Request $request)
     {
         $data = $request->all();
-        Log::info('request',$data);
+        Log::info('request',$data->DeviceName);
 
 //        $data = $request->validated();
 //        $id = $data['EmployeeID'];
