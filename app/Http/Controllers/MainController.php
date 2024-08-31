@@ -25,14 +25,14 @@ class MainController extends Controller
                 $query->where('day', $day);
             }
         ])->get();
-
         $this->calculatestudents($faculties, $day);
+        $all_teachers = Teacher::query()->where('kind','teacher')->count();
         $teachersStatistics = EducationDays::where('day', $day) ? EducationDays::where('date', $day)->first() : null;
         return $this->data([
             'all_students' => $students,
             'all_comers' => $this->all_comers,
             'late_comers' => $this->late_comers,
-            'all_teachers' => $teachersStatistics ? $teachersStatistics->all_teachers : 0,
+            'all_teachers' => $all_teachers,
             'all_come_teachers' => $teachersStatistics ? $teachersStatistics->come_teachers : 0,
             'late_come_teachers' => $teachersStatistics ? $teachersStatistics->late_teachers : 0,
         ]);
