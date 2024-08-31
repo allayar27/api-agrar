@@ -30,7 +30,8 @@ class AttendanceController extends Controller
         foreach ($result['data'] as $data) {
             $id = $data['EmployeeID'];
             try {
-                if ($data['PersonGroup'] == 'student') {
+                if ($data['PersonGroup'] != 'teacher' && $data['PersonGroup'] != 'employee')
+                {
                     Log::log('info' , $data['PersonGroup']);
                     $student = Student::query()->where('hemis_id', '=', $id)->first();
                     if ($student) {

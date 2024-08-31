@@ -2,14 +2,14 @@
 
 namespace App\Listeners;
 
-use App\Models\Teacher;
+use App\Events\TeacherAttendanceCreated;
+use App\Helpers\ErrorAddHelper;
 use App\Models\Attendance;
 use App\Models\EducationDays;
-use App\Helpers\ErrorAddHelper;
+use App\Models\EmployeeEducationDays;
+use App\Models\Teacher;
 use Illuminate\Support\Facades\DB;
-use App\Events\TeacherAttendanceCreated;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Contracts\Queue\ShouldQueue;
+use Throwable;
 
 class RecordTeacherStatistics
 {
@@ -33,35 +33,57 @@ class RecordTeacherStatistics
             if (!$attendance) {
                 return;
             }
-            $time_in = "09:00";
             $teachers = Teacher::pluck('id');
 
-            $come_teachers_count = Attendance::where('kind', 'teacher')->where('date', $attendance->date)
-                ->where('type', 'in')
-                ->whereIn('attendanceable_id', $teachers)
-                ->distinct('attendanceable_id')
-                ->count('attendanceable_id');
+            $come_teachers_count = $this->comers('teacher', $teachers,$attendance);
+            $come_employees_count = $this->comers('employee', $teachers,$attendance);
 
-            $late_teachers_count = Attendance::where('kind', 'teacher')->where('date', $attendance->date)
-                ->where('type', 'in')
-                ->whereIn('attendanceable_id', $teachers)
-                ->where('time', '>=', $time_in)
-                ->distinct('attendanceable_id')
-                ->count('attendanceable_id');
+            $late_teachers_count = $this->laters('teacher', $teachers, $attendance);
+            $late_employees_count = $this->laters('employee', $teachers, $attendance);
 
             EducationDays::updateOrCreate(
                 ['date' => $attendance->date],
                 [
-                    'all_teachers' => Teacher::count(),
+                    'all_teachers' => Teacher::where('kind', 'teacher')->count(),
                     'come_teachers' => $come_teachers_count,
                     'late_teachers' => $late_teachers_count,
                 ]
             );
+            EmployeeEducationDays::query()->updateOrCreate(
+                ['date' => $attendance->date],
+                [
+                    'all_teachers' => Teacher::where('kind', 'teacher')->count(),
+                    'come_teachers' => $come_employees_count,
+                    'late_teachers' => $late_employees_count,
+                ]
+            );
             DB::commit();
-        } catch (\Throwable $th) {
+        } catch (Throwable $th) {
             Db::rollBack();
             ErrorAddHelper::logException($th);
         }
+    }
+
+    public function laters(string $kind, $teachers, $attendance): int
+    {
+        $time_in = "09:00";
+        $late_teachers_count = Attendance::where('kind', $kind)->where('date', $attendance->date)
+            ->where('type', 'in')
+            ->whereIn('attendanceable_id', $teachers)
+            ->where('time', '>=', $time_in)
+            ->distinct('attendanceable_id')
+            ->count('attendanceable_id');
+        return $late_teachers_count;
+    }
+
+    public function comers(string $kind, $teachers, $attendance): int
+    {
+        $come_teachers_count = Attendance::where('kind', $kind)->where('date', $attendance->date)
+            ->where('type', 'in')
+            ->whereIn('attendanceable_id', $teachers)
+            ->distinct('attendanceable_id')
+            ->count('attendanceable_id');
+        return $come_teachers_count;
     }
 
 }
