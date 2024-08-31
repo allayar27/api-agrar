@@ -26,9 +26,8 @@ class AttendanceController extends Controller
         $i = 0;
         foreach ($data['data'] as  $value) {
             $i++;
-
         }
-        Log::log('i' , $i);
+//        Log::log('i' , $i);
 //        $data = $request->validated();
 //        $id = $data['EmployeeID'];
 //        DB::beginTransaction();
