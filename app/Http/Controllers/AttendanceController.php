@@ -111,4 +111,12 @@ class AttendanceController extends Controller
             'data' => $comers,
         ]);
     }
+
+    public function latest():JsonResponse
+    {
+        $latest = Attendance::query()->orderBy('date_time', 'desc')->take(1);
+        return response()->json([
+            'data' => $latest->date_time
+        ]);
+    }
 }
