@@ -14,6 +14,7 @@ use App\Models\FacultyEducationDays;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class RecordStudentStatistics
 {
@@ -38,8 +39,7 @@ class RecordStudentStatistics
             $today = $attendance->date;
             DB::beginTransaction();
 
-            $time_in = $student->time_in($today);
-
+            $time_in = "09:00:00";
             if ($time_in !== null) {
                 $attendances = Attendance::where('kind', 'student')
                     ->where('date', $today)
@@ -59,12 +59,12 @@ class RecordStudentStatistics
                     ->count();
 
                 $late_students_count_faculty = $attendances->where('faculty_id', $facultyId)
-                    ->where('time', '>=', $time_in)
+                    ->where('time', '>', $time_in)
                     ->unique('attendanceable_id')
                     ->count();
 
                 $late_students_count_group = $attendances->whereIn('attendanceable_id', $groupIds)
-                    ->where('time', '>=', $time_in)
+                    ->where('time', '>', $time_in)
                     ->unique('attendanceable_id')
                     ->count();
 

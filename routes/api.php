@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\DeviceController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\MainController;
@@ -36,6 +37,7 @@ Route::get('main/all',[MainController::class, 'index']);
 Route::get('main/students',[StudentController::class, 'allStudents']);
 Route::get('main/late_comers',[StudentController::class, 'lateComers']);
 Route::get('main/note_comers',[StudentController::class, 'noteComers']);
+Route::get('monthly',[StudentController::class, 'monthly']);
 Route::get('student/latest/{id}',[StudentController::class, 'studentAttendance']);
 // Route::get('main/student',[MainController::class, 'student']);
 
@@ -43,4 +45,6 @@ Route::get('late_teachers',[TeacherController::class, 'allTeachers']);
 Route::get('teachers/days',[TeacherController::class, 'getMonthlyStatistics']);
 
 Route::get('lastComers',[AttendanceController::class,'lastComers']);
+Route::get('latest',[AttendanceController::class,'latest']);
 
+Route::post('device/add',[DeviceController::class,'create']);

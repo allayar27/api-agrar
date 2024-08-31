@@ -20,6 +20,7 @@ class Student extends Model
     use HasFactory;
 
     protected $fillable = [
+        'hemis_id',
         'name',
         'firstname',
         'secondname',

@@ -15,20 +15,18 @@ class StoreAttendanceRequest extends FormRequest
     public function rules()
     {
         return [
-            'id' => 'required',
-            'time' => 'required',
-            'type' => 'required|in:in,out',
-            'kind' =>'required|in:student,teacher',
-            'date' => 'required|date',
-            'score' => 'required|numeric',
-            'device_id' => 'required',
+            'EmployeeID' => 'required',
+            'AccessTime' => 'required',
+            'PersonGroup' =>'required|in:student,teacher',
+            'AccessDate' => 'required|date',
+            'DeviceName' => 'required|string|exists:devices,name',
         ];
     }
 
     public function withValidator($validator)
     {
         $validator->after(function ($validator) {
-            if (!$this->idExistsInEitherTable($this->id)) {
+            if (!$this->idExistsInEitherTable($this->EmployeeID)) {
                 $validator->errors()->add('id', 'The id must exist in either students or teachers table.');
             }
         });
@@ -36,8 +34,8 @@ class StoreAttendanceRequest extends FormRequest
 
     protected function idExistsInEitherTable($id)
     {
-        $studentExists = \App\Models\Student::where('id', $id)->exists();
-        $teacherExists = \App\Models\Teacher::where('id', $id)->exists();
+        $studentExists = \App\Models\Student::where('hemis_id', $id)->exists();
+        $teacherExists = \App\Models\Teacher::where('hemis_id', $id)->exists();
 
         return $studentExists || $teacherExists;
     }

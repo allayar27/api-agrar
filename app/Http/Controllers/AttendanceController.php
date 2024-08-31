@@ -7,6 +7,7 @@ use App\Events\TeacherAttendanceCreated;
 use App\Helpers\ErrorAddHelper;
 use App\Http\Requests\Attendance\StoreAttendanceRequest;
 use App\Models\Attendance;
+use App\Models\Device;
 use App\Models\Student;
 use App\Models\Teacher;
 use Carbon\Carbon;
@@ -14,46 +15,49 @@ use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class AttendanceController extends Controller
 {
-    public function create(StoreAttendanceRequest $request): JsonResponse
+    public function create(Request $request)
     {
-        $data = $request->validated();
-        $id = $data['id'];
-        DB::beginTransaction();
-        try {
-            if ($data['kind'] == 'student') {
-                $student = Student::query()->findOrFail($id);
-                $attendance = $this->createAttendance($student, $data, 'student');
-                event(new StudentAttendanceCreated($attendance));
-            } elseif ($data['kind'] == 'teacher') {
-                $teacher = Teacher::query()->findOrFail($id);
-                $attendance = $this->createAttendance($teacher, $data, 'teacher');
-                event(new TeacherAttendanceCreated($attendance));
-            }
-            DB::commit();
-        } catch (Exception $e) {
-            DB::rollBack();
-            ErrorAddHelper::logException($e);
-            return response()->json([
-                'error' => 'An error occurred while recording attendance.',
-                'details' => $e->getMessage(),
-                'line' => $e->getLine(),
-            ], $e->getCode() ?: 500);
-        }
+        Log::info('request',$request->all());
+//        $data = $request->validated();
+//        $id = $data['EmployeeID'];
+//        DB::beginTransaction();
+//        try {
+//            if ($data['PersonGroup'] == 'student') {
+//                $student = Student::query()->where('hemis_id', '=', $id)->first();
+//                $attendance = $this->createAttendance($student, $data, 'student');
+//                event(new StudentAttendanceCreated($attendance));
+//            } elseif ($data['PersonGroup'] == 'teacher' || $data['PersonGroup'] == 'employee') {
+//                $teacher = Teacher::query()->where('hemis_id', $id)->first();
+//                $attendance = $this->createAttendance($teacher, $data, 'teacher');
+//                event(new TeacherAttendanceCreated($attendance));
+//            }
+//            DB::commit();
+//        } catch (Exception $e) {
+//            DB::rollBack();
+//            ErrorAddHelper::logException($e);
+//            return response()->json([
+//                'error' => 'An error occurred while recording attendance.',
+//                'details' => $e->getMessage(),
+//                'line' => $e->getLine(),
+//            ], $e->getCode() ?: 500);
+//        }
         return $this->success('Attendance created successfully', 201);
     }
 
     private function createAttendance($entity, $data, $kind)
     {
+        $device = Device::query()->where('name', '=', $data['DeviceName'])->first();
         $attendanceData = [
-            'date' => $data['date'],
-            'time' => $data['time'],
-            'type' => $data['type'],
-            'date_time' => $data['date'] . ' ' . $data['time'],
+            'date' => $data['AccessDate'],
+            'time' => $data['AccessTime'],
+            'type' => $device->type,
+            'date_time' => $data['AccessDate'] . ' ' . $data['AccessTime'],
             'kind' => $kind,
-            'device_id' => $data['device_id'],
+            'device_id' => $device->id,
         ];
 
         if ($kind === 'student' && $entity->group && $entity->group->faculty) {
@@ -69,12 +73,12 @@ class AttendanceController extends Controller
      * @param Request $request
      * @return JsonResponse
      */
-    public function lastComers(Request $request):JsonResponse
+    public function lastComers(Request $request): JsonResponse
     {
         $day = $request->get('day') ?? Carbon::today();
         $query = Attendance::with(['group', 'faculty'])
             ->where('date', $day)
-            ->orderBy('time', 'DESC');
+            ->latest()->take(20);
         if ($request->has('group_id')) {
             $query->where('group_id', $request->get('group_id'));
         }
@@ -107,6 +111,14 @@ class AttendanceController extends Controller
         return response()->json([
             'total' => $comers->count(),
             'data' => $comers,
+        ]);
+    }
+
+    public function latest(): JsonResponse
+    {
+        $latest = Attendance::query()->orderBy('id', 'desc')->take(1)->first();
+        return response()->json([
+            'data' => $latest['date_time']
         ]);
     }
 }
