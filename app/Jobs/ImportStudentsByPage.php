@@ -39,7 +39,6 @@ class ImportStudentsByPage implements ShouldQueue
         if ($response->successful()) {
             $students = $response->json()['data']['items'];
             foreach ($students as $student) {
-                Log::info('Imported student: '. $students[0]['group']['id']);
                 DB::beginTransaction();
                 try {
                     $faculty = Faculty::updateOrCreate([
