@@ -15,11 +15,12 @@ class StoreAttendanceRequest extends FormRequest
     public function rules()
     {
         return [
-//            'data'=>'required|array',
+            'data'=>'required|array',
 //            'data.*.EmployeeID' => 'required|string|max:50',
 //            'data.*.AccessTime' => 'required|date',
 //            'data.*.AccessDate' => 'required|date_format:Y-m-d',
 //            'data.*.PersonGroup' => 'required|string|max:50',
+//            'data.*.DeviceName' => 'required|string|max:50',
         ];
     }
 
