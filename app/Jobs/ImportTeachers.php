@@ -46,7 +46,7 @@ class ImportTeachers implements ShouldQueue
                         'name' => $teacher['employmentStaff']['name'],
                     ]);
                     Teacher::updateOrCreate([
-                        'hemis_id' =>$teacher['id'],
+                        'hemis_id' =>$teacher['employee_id_number'],
                         'name' => $teacher['full_name'],
                         'firstname' => $teacher['first_name'],
                         'secondname' => $teacher['second_name'],
