@@ -69,13 +69,13 @@ class TeacherController extends Controller
         $month = (int)$request->input('month', Carbon::now()->month);
         $year = (int)$request->input('year', Carbon::now()->year);
 
-        if ($month < 1 || $month > 12) {
-            return response()->json(['error' => 'Invalid month provided.'], 400);
-        }
+//        if ($month < 1 || $month > 12) {
+//            return response()->json(['error' => 'Invalid month provided.'], 400);
+//        }
 
-        if ($year < 1900 || $year > Carbon::now()->year) {
-            return response()->json(['error' => 'Invalid year provided.'], 400);
-        }
+//        if ($year < 1900 || $year > Carbon::now()->year) {
+//            return response()->json(['error' => 'Invalid year provided.'], 400);
+//        }
 
         $startDate = Carbon::createFromDate($year, $month, 1)->startOfMonth();
         $endDate = Carbon::createFromDate($year, $month, 1)->endOfMonth();
