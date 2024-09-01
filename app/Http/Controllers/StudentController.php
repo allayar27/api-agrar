@@ -118,7 +118,7 @@ class StudentController extends Controller
                 'late_comers_count' => count($lateComers),
                 'late_comers' => $lateComers,
             ];
-        })->sortDesc('late_comers');
+        })->sortByDesc('late_comers');
 
         $currentPage = LengthAwarePaginator::resolveCurrentPage();
         $pagedResult = new LengthAwarePaginator(
