@@ -26,7 +26,7 @@ class StudentController extends Controller
                 'firstname',
                 'secondname',
                 'thirdname',
-            ], 'LIKE', "%$search%")->paginate($request->input('per_page', 20));
+            ], 'LIKE', "%$search%");
         }
         if ($request->has('faculty_id')) {
             $query->where('faculty_id', $request->input('faculty_id'));
