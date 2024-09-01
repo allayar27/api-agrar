@@ -41,10 +41,10 @@ class RecordTeacherStatistics
             $late_teachers_count = $this->laters('teacher', $teachers, $attendance);
             $late_employees_count = $this->laters('employee', $teachers, $attendance);
 
-            EducationDays::updateOrCreate(
+            EducationDays::query()->updateOrCreate(
                 ['date' => $attendance->date],
                 [
-                    'all_teachers' => Teacher::where('kind', 'teacher')->count(),
+                    'all_teachers' => Teacher::query()->where('kind', 'teacher')->count(),
                     'come_teachers' => $come_teachers_count,
                     'late_teachers' => $late_teachers_count,
                 ]

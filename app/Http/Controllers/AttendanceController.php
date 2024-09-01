@@ -19,7 +19,11 @@ use Illuminate\Support\Facades\Log;
 
 class AttendanceController extends Controller
 {
-    public function create(StoreAttendanceRequest $request)
+    /**
+     * @param StoreAttendanceRequest $request
+     * @return JsonResponse
+     */
+    public function create(StoreAttendanceRequest $request):JsonResponse
     {
         $result = $request->validated();
 
@@ -59,6 +63,12 @@ class AttendanceController extends Controller
         return $this->success('Attendance created successfully', 201);
     }
 
+    /**
+     * @param $entity
+     * @param $data
+     * @param $kind
+     * @return mixed
+     */
     private function createAttendance($entity, $data, $kind)
     {
         $device = Device::query()->where('name', '=', $data['DeviceName'])->first();

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\EmployeeEducationDays;
 use Carbon\Carbon;
 use App\Models\Faculty;
 use App\Models\Student;
@@ -27,7 +28,9 @@ class MainController extends Controller
         ])->get();
         $this->calculatestudents($faculties, $day);
         $all_teachers = Teacher::query()->where('kind','teacher')->count();
+        $all_employees = Teacher::query()->where('kind','employee')->count();
         $teachersStatistics = EducationDays::where('day', $day) ? EducationDays::where('date', $day)->first() : null;
+        $employeesStatistics = EmployeeEducationDays::query()->where('day',$day) ? EmployeeEducationDays::query()->where('day', $day)->first() : null;
         return $this->data([
             'all_students' => $students,
             'all_comers' => $this->all_comers,
@@ -35,6 +38,9 @@ class MainController extends Controller
             'all_teachers' => $all_teachers,
             'all_come_teachers' => $teachersStatistics ? $teachersStatistics->come_teachers : 0,
             'late_come_teachers' => $teachersStatistics ? $teachersStatistics->late_teachers : 0,
+            'all_employees' => $all_employees,
+            'all_come_employees' => $employeesStatistics ? $employeesStatistics->come_teachers : 0,
+            'late_come_employees' => $employeesStatistics ? $employeesStatistics->late_teachers : 0,
         ]);
     }
 
