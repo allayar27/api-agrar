@@ -178,25 +178,25 @@ class StudentController extends Controller
             ];
         })->sortBy('absent_students_count');
 
-//        $currentPage = LengthAwarePaginator::resolveCurrentPage();
-//        $pagedResult = new LengthAwarePaginator(
-//            $result->forPage($currentPage, $perPage)->values(),
-//            $result->count(),
-//            $perPage,
-//            $currentPage,
-//            ['path' => $request->url(), 'query' => $request->query()]
-//        );
+        $currentPage = LengthAwarePaginator::resolveCurrentPage();
+        $pagedResult = new LengthAwarePaginator(
+            $result->forPage($currentPage, $perPage)->values(),
+            $result->count(),
+            $perPage,
+            $currentPage,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
 
         return response()->json([
             'success' => true,
-//            'pagination' => [
-//                'total' => $pagedResult->total(),
-//                'current_page' => $pagedResult->currentPage(),
-//                'last_page' => $pagedResult->lastPage(),
-//                'per_page' => $pagedResult->perPage(),
-//                'total_pages' => $pagedResult->lastPage(),
-//            ],
-            'data' => $result,
+            'pagination' => [
+                'total' => $pagedResult->total(),
+                'current_page' => $pagedResult->currentPage(),
+                'last_page' => $pagedResult->lastPage(),
+                'per_page' => $pagedResult->perPage(),
+                'total_pages' => $pagedResult->lastPage(),
+            ],
+            'data' => $pagedResult->items(),
         ]);
 
     }
