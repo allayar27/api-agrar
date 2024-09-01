@@ -31,7 +31,7 @@ class GroupController extends Controller
             return [
                 'group_id' => $group->id,
                 'group_name' => $group->name,
-                'total_students' => $group->students_count,  // Bu yerda students_count avtomatik ravishda kiradi
+                'total_students' => $group->students_count,
                 'percent' => $groupEducationDay ? $groupEducationDay->come_students / $groupEducationDay->all_students * 100 : 0,
                 'come_students' => $groupEducationDay ? $groupEducationDay->come_students : 0,
                 'late_students' => $groupEducationDay ? $groupEducationDay->late_students : 0,
@@ -40,7 +40,7 @@ class GroupController extends Controller
 
         $currentPage = LengthAwarePaginator::resolveCurrentPage();
         $paginatedGroups = new LengthAwarePaginator(
-            $groupsData->forPage($currentPage, $perPage),
+            $groupsData->forPage($currentPage, $perPage)->values(),
             $groupsData->count(),
             $perPage,
             $currentPage,
