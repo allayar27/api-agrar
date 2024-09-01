@@ -44,8 +44,15 @@ class AttendanceController extends Controller
                 } elseif ($data['PersonGroup'] == 'teacher' || $data['PersonGroup'] == 'employee')
                 {
                     $teacher = Teacher::query()->where('hemis_id', $id)->first();
+
                     if($teacher){
-                        $attendance = $this->createAttendance($teacher, $data, 'teacher');
+                        if($data['PersonGroup'] == 'teacher'){
+                            $kind = 'teacher';
+                        }
+                        if($data['PersonGroup'] == 'employee'){
+                            $kind = 'employee';
+                        }
+                        $attendance = $this->createAttendance($teacher, $data, $kind);
                         event(new TeacherAttendanceCreated($attendance));
                     }
                 }
