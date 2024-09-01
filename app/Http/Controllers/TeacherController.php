@@ -37,10 +37,9 @@ class TeacherController extends Controller
                 'late' => Carbon::parse($attendance->time)->diffInMinutes($time_in)
             ];
         });
-
         $currentPage = LengthAwarePaginator::resolveCurrentPage();
         $paginatedLateComers = new LengthAwarePaginator(
-            $lateComers->forPage($currentPage, $perPage),
+            $lateComers->forPage($currentPage, $perPage)->values(),
             $lateComers->count(),
             $perPage,
             $currentPage,

@@ -122,7 +122,7 @@ class StudentController extends Controller
 
         $currentPage = LengthAwarePaginator::resolveCurrentPage();
         $pagedResult = new LengthAwarePaginator(
-            $result->forPage($currentPage, $perPage),
+            $result->forPage($currentPage, $perPage)->values(),
             $result->count(),
             $perPage,
             $currentPage,
@@ -180,7 +180,7 @@ class StudentController extends Controller
 
         $currentPage = LengthAwarePaginator::resolveCurrentPage();
         $pagedResult = new LengthAwarePaginator(
-            $result->forPage($currentPage, $perPage),
+            $result->forPage($currentPage, $perPage)->values(),
             $result->count(),
             $perPage,
             $currentPage,
