@@ -66,16 +66,10 @@ class TeacherController extends Controller
     public function getMonthlyStatistics(Request $request): JsonResponse
     {
 
-        $month = $request->input('month', Carbon::now()->month);
-        $year = $request->input('year', Carbon::now()->year);
-
-//        if ($month < 1 || $month > 12) {
-//            return response()->json(['error' => 'Invalid month provided.'], 400);
-//        }
-
-//        if ($year < 1900 || $year > Carbon::now()->year) {
-//            return response()->json(['error' => 'Invalid year provided.'], 400);
-//        }
+        $monthInput = $request->input('month', Carbon::now()->month);
+        [$year, $month] = explode('-', $monthInput);
+        $year = (int) $year;
+        $month = (int) $month;
 
         $startDate = Carbon::createFromDate($year, $month, 1)->startOfMonth();
         $endDate = Carbon::createFromDate($year, $month, 1)->endOfMonth();

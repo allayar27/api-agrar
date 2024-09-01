@@ -252,7 +252,6 @@ class StudentController extends Controller
         for ($day = $startOfMonth; $day->lte($endOfMonth); $day->addDay()) {
             $dayString = $day->format('Y-m-d');
 
-            // Shu kunga kelgan va kech qolgan studentlar sonini hisoblash
             $comeStudents = GroupEducationdays::where('day', $dayString)->sum('come_students');
             $lateStudents = GroupEducationdays::where('day', $dayString)->sum('late_students');
 
