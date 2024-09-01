@@ -19,8 +19,8 @@ class StoreAttendanceRequest extends FormRequest
             'data.*.EmployeeID' => 'required|int',
             'data.*.AccessTime' => 'required|',
             'data.*.AccessDate' => 'required|',
-            'data.*.PersonGroup' => 'required|string|max:50',
-            'data.*.DeviceName' => 'required|string|max:50',
+            'data.*.PersonGroup' => 'required|string',
+            'data.*.DeviceName' => 'required|string',
         ];
     }
 
