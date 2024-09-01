@@ -118,7 +118,7 @@ class StudentController extends Controller
                 'late_comers_count' => count($lateComers),
                 'late_comers' => $lateComers,
             ];
-        });
+        })->sortDesc('late_comers');
 
         $currentPage = LengthAwarePaginator::resolveCurrentPage();
         $pagedResult = new LengthAwarePaginator(
@@ -146,7 +146,6 @@ class StudentController extends Controller
 
     public function noteComers(NoteComersRequest $request): JsonResponse
     {
-
         $day = $request->input('day', Carbon::today()->format('Y-m-d'));
         $perPage = $request->input('per_page', 10);
 
@@ -159,6 +158,7 @@ class StudentController extends Controller
         $result = $groups->map(function ($group) use ($day) {
             $totalStudents = $group->students_count ?? 0;
             $absentStudents = [];
+
             foreach ($group->students as $student) {
                 $attendance = $student->attendances->first();
                 if (!$attendance) {
@@ -176,7 +176,7 @@ class StudentController extends Controller
                 'absent_students_count' => count($absentStudents),
                 'absent_students' => $absentStudents,
             ];
-        });
+        })->sortBy('absent_students_count');
 
         $currentPage = LengthAwarePaginator::resolveCurrentPage();
         $pagedResult = new LengthAwarePaginator(
@@ -197,7 +197,6 @@ class StudentController extends Controller
                 'total_pages' => $pagedResult->lastPage(),
             ],
             'data' => $pagedResult->items(),
-
         ]);
 
     }
