@@ -32,13 +32,13 @@ class AttendanceController extends Controller
             try {
                 if ($data['PersonGroup'] != 'teacher' && $data['PersonGroup'] != 'employee')
                 {
-                    Log::log('info' , $data['PersonGroup']);
                     $student = Student::query()->where('hemis_id', '=', $id)->first();
                     if ($student) {
                         $attendance = $this->createAttendance($student, $data, 'student');
                         event(new StudentAttendanceCreated($attendance));
                     }
-                } elseif ($data['PersonGroup'] == 'teacher' || $data['PersonGroup'] == 'employee') {
+                } elseif ($data['PersonGroup'] == 'teacher' || $data['PersonGroup'] == 'employee')
+                {
                     $teacher = Teacher::query()->where('hemis_id', $id)->first();
                     if($teacher){
                         $attendance = $this->createAttendance($teacher, $data, 'teacher');
@@ -56,7 +56,6 @@ class AttendanceController extends Controller
                 ], $e->getCode() ?: 500);
             }
         }
-
         return $this->success('Attendance created successfully', 201);
     }
 

@@ -2,19 +2,18 @@
 
 namespace App\Jobs;
 
-use App\Models\Faculty;
 use App\Models\Teacher;
-use Illuminate\Bus\Queueable;
 use App\Models\TeacherSchedule;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Queue\SerializesModels;
-use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
-class ImportTeachers implements ShouldQueue
+class ImportEmployee implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
@@ -35,14 +34,14 @@ class ImportTeachers implements ShouldQueue
         $response = Http::withHeaders([
             'accept' => 'application/json',
             'Authorization' => 'Bearer ' . env('HEMIS_BEARER_TOKEN'),
-        ])->get(env('HEMIS_URL')."employee-list?type=teacher&page={$this->page}&limit=10");
+        ])->get(env('HEMIS_URL')."employee-list?type=employee&page={$this->page}&limit=10");
         if ($response->successful()) {
             $teachers = $response->json()['data']['items'];
             foreach ($teachers as $teacher) {
 
                 DB::beginTransaction();
                 try {
-                    $teacherschedule = TeacherSchedule::updateOrCreate([
+                    $teacherschedule = TeacherSchedule::query()->updateOrCreate([
                         'name' => $teacher['employmentStaff']['name'],
                     ]);
                     Teacher::updateOrCreate(
@@ -55,7 +54,7 @@ class ImportTeachers implements ShouldQueue
                         'secondname' => $teacher['second_name'],
                         'thirdname' => $teacher['third_name'],
                         'teacher_schedule_id' => $teacherschedule->id,
-                        'kind' => 'teacher',
+                        'kind' => 'employee',
                     ]);
                     DB::commit();
                 } catch (\Throwable $th) {

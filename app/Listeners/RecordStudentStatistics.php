@@ -38,7 +38,6 @@ class RecordStudentStatistics
             $facultyId = $attendance->faculty_id;
             $today = $attendance->date;
             DB::beginTransaction();
-
             $time_in = "09:00:00";
             if ($time_in !== null) {
                 $attendances = Attendance::where('kind', 'student')

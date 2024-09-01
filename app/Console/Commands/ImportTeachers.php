@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Jobs\ImportEmployee;
 use App\Jobs\ImportTeachers as ImportTeachersJob;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
@@ -30,12 +31,22 @@ class ImportTeachers extends Command
         $response = Http::withHeaders([
             'accept' => 'application/json',
             'Authorization' => 'Bearer ' . env('HEMIS_BEARER_TOKEN'),
-        ])->get(env('HEMIS_URL').'employee-list?type=all&page=1&limit=10');
+        ])->get(env('HEMIS_URL').'employee-list?type=teacher&page=1&limit=10');
 
         $totalPages = $response->json()['data']['pagination']['pageCount'];
 
         for ($page = 1; $page <= $totalPages; $page++) {
             ImportTeachersJob::dispatch($page);
+        }
+        $response = Http::withHeaders([
+            'accept' => 'application/json',
+            'Authorization' => 'Bearer ' . env('HEMIS_BEARER_TOKEN'),
+        ])->get(env('HEMIS_URL').'employee-list?type=employee&page=1&limit=10');
+
+        $totalPages = $response->json()['data']['pagination']['pageCount'];
+
+        for ($page = 1; $page <= $totalPages; $page++) {
+            ImportEmployee::dispatch($page);
         }
         $this->info('Teachers imported');
 

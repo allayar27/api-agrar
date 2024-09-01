@@ -52,7 +52,7 @@ class RecordTeacherStatistics
             EmployeeEducationDays::query()->updateOrCreate(
                 ['date' => $attendance->date],
                 [
-                    'all_teachers' => Teacher::where('kind', 'teacher')->count(),
+                    'all_teachers' => Teacher::where('kind', 'employee')->count(),
                     'come_teachers' => $come_employees_count,
                     'late_teachers' => $late_employees_count,
                 ]
