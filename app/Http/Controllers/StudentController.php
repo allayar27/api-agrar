@@ -176,7 +176,7 @@ class StudentController extends Controller
                 'absent_students_count' => count($absentStudents),
                 'absent_students' => $absentStudents,
             ];
-        })->sortBy('absent_students_count','asc');
+        })->sortBy('absent_students_count');
 
 //        $currentPage = LengthAwarePaginator::resolveCurrentPage();
 //        $pagedResult = new LengthAwarePaginator(
