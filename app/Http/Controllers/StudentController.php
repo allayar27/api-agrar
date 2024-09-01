@@ -51,13 +51,16 @@ class StudentController extends Controller
             ];
         });
         $currentPage = LengthAwarePaginator::resolveCurrentPage();
+
+        $perPage = $request->input('per_page', 20);
         $pagedResult = new LengthAwarePaginator(
-            $students->forPage($currentPage, $request->input('per_page', 20)),
+            $students->forPage($currentPage, $perPage)->values(),
             $students->count(),
-            $request->input('per_page', 20),
+            $perPage,
             $currentPage,
             ['path' => $request->url(), 'query' => $request->query()]
         );
+
         return response()->json([
             'success' => true,
             'pagination' => [
