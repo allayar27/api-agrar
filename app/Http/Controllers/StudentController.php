@@ -176,27 +176,27 @@ class StudentController extends Controller
                 'absent_students_count' => count($absentStudents),
                 'absent_students' => $absentStudents,
             ];
-        })->sortBy('absent_students_count');
+        })->sortBy('absent_students_count','asc');
 
-        $currentPage = LengthAwarePaginator::resolveCurrentPage();
-        $pagedResult = new LengthAwarePaginator(
-            $result->forPage($currentPage, $perPage)->values(),
-            $result->count(),
-            $perPage,
-            $currentPage,
-            ['path' => $request->url(), 'query' => $request->query()]
-        );
+//        $currentPage = LengthAwarePaginator::resolveCurrentPage();
+//        $pagedResult = new LengthAwarePaginator(
+//            $result->forPage($currentPage, $perPage)->values(),
+//            $result->count(),
+//            $perPage,
+//            $currentPage,
+//            ['path' => $request->url(), 'query' => $request->query()]
+//        );
 
         return response()->json([
             'success' => true,
-            'pagination' => [
-                'total' => $pagedResult->total(),
-                'current_page' => $pagedResult->currentPage(),
-                'last_page' => $pagedResult->lastPage(),
-                'per_page' => $pagedResult->perPage(),
-                'total_pages' => $pagedResult->lastPage(),
-            ],
-            'data' => $pagedResult->items(),
+//            'pagination' => [
+//                'total' => $pagedResult->total(),
+//                'current_page' => $pagedResult->currentPage(),
+//                'last_page' => $pagedResult->lastPage(),
+//                'per_page' => $pagedResult->perPage(),
+//                'total_pages' => $pagedResult->lastPage(),
+//            ],
+            'data' => $result,
         ]);
 
     }
