@@ -36,8 +36,7 @@ class GroupController extends Controller
                 'come_students' => $groupEducationDay ? $groupEducationDay->come_students : 0,
                 'late_students' => $groupEducationDay ? $groupEducationDay->late_students : 0,
             ];
-        });
-
+        })->sortByDesc('percent');
         $currentPage = LengthAwarePaginator::resolveCurrentPage();
         $paginatedGroups = new LengthAwarePaginator(
             $groupsData->forPage($currentPage, $perPage)->values(),
