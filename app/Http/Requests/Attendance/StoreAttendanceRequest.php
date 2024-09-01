@@ -23,21 +23,4 @@ class StoreAttendanceRequest extends FormRequest
             'data.*.DeviceName' => 'required|string',
         ];
     }
-
-//    public function withValidator($validator)
-//    {
-//        $validator->after(function ($validator) {
-//            if (!$this->idExistsInEitherTable($this->EmployeeID)) {
-//                $validator->errors()->add('id', 'The id must exist in either students or teachers table.');
-//            }
-//        });
-//    }
-
-//    protected function idExistsInEitherTable($id)
-//    {
-//        $studentExists = \App\Models\Student::where('hemis_id', $id)->exists();
-//        $teacherExists = \App\Models\Teacher::where('hemis_id', $id)->exists();
-//
-//        return $studentExists || $teacherExists;
-//    }
 }

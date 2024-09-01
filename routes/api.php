@@ -43,6 +43,7 @@ Route::get('student/latest/{id}',[StudentController::class, 'studentAttendance']
 
 Route::get('late_teachers',[TeacherController::class, 'allTeachers']);
 Route::get('teachers/days',[TeacherController::class, 'getMonthlyStatistics']);
+Route::get('employees/days',[TeacherController::class, 'getEmployeesMonthly']);
 
 Route::get('lastComers',[AttendanceController::class,'lastComers']);
 Route::get('latest',[AttendanceController::class,'latest']);

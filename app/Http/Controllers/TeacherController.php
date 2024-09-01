@@ -8,6 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use Symfony\Component\HttpKernel\DependencyInjection\ControllerArgumentValueResolverPass;
 
 class TeacherController extends Controller
 {
@@ -65,8 +66,7 @@ class TeacherController extends Controller
 
     public function getMonthlyStatistics(Request $request): JsonResponse
     {
-
-        $monthInput = $request->input('month', Carbon::now()->month);
+        $monthInput = $request->input('month', Carbon::now()->format('Y-m'));
         [$year, $month] = explode('-', $monthInput);
         $year = (int) $year;
         $month = (int) $month;
@@ -93,5 +93,35 @@ class TeacherController extends Controller
             'daily_statistics' => $dailyStatistics,
         ]);
 
+    }
+
+    public function getEmployeesMonthly(Request $request): JsonResponse
+    {
+        $monthIn = $request->input('month') ?? Carbon::now()->format('Y-m');
+        [$year, $month] = explode('-', $monthIn);
+        $year = (int) $year;
+        $month = (int) $month;
+
+        $startDate = Carbon::createFromDate($year, $month, 1)->startOfMonth();
+        $endDate = Carbon::createFromDate($year, $month, 1)->endOfMonth();
+
+        $dailyStatistics = DB::table('employee_education_days')
+            ->select(
+                'date',
+                'all_teachers',
+                'come_teachers',
+                'late_teachers',
+                DB::raw('((come_teachers / all_teachers) * 100) as come_percentage'),
+                DB::raw('(((all_teachers - come_teachers) / all_teachers) * 100) as not_come_percentage'),
+                DB::raw('((late_teachers / all_teachers) * 100) as late_percentage')
+            )
+            ->whereBetween('date', [$startDate, $endDate])
+            ->orderBy('date', 'Desc')
+            ->get();
+
+        return response()->json([
+            'month' => $month,
+            'daily_statistics' => $dailyStatistics,
+        ]);
     }
 }
