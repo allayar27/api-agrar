@@ -20,7 +20,7 @@ class TeacherController extends Controller
         $teachers = Teacher::whereHas('attendances', function ($query) use ($day, $time_in) {
             $query->where('date', $day)
                 ->where('type', 'in')
-                ->whereTime('time', '>', $time_in)->orderBy('time','DESC');
+                ->whereTime('time', '>', $time_in)->orderBy('time', 'DESC');
         })->with(['attendances' => function ($query) use ($day, $time_in) {
             $query->where('date', $day)
                 ->where('type', 'in')
@@ -63,10 +63,19 @@ class TeacherController extends Controller
     }
 
 
-    public function getMonthlyStatistics(Request $request):JsonResponse
+    public function getMonthlyStatistics(Request $request): JsonResponse
     {
-        $month = $request->input('month', Carbon::now()->month);
-        $year = $request->input('year', Carbon::now()->year);
+
+        $month = (int)$request->input('month', Carbon::now()->month);
+        $year = (int)$request->input('year', Carbon::now()->year);
+
+        if ($month < 1 || $month > 12) {
+            return response()->json(['error' => 'Invalid month provided.'], 400);
+        }
+
+        if ($year < 1900 || $year > Carbon::now()->year) {
+            return response()->json(['error' => 'Invalid year provided.'], 400);
+        }
 
         $startDate = Carbon::createFromDate($year, $month, 1)->startOfMonth();
         $endDate = Carbon::createFromDate($year, $month, 1)->endOfMonth();
@@ -81,12 +90,14 @@ class TeacherController extends Controller
                 DB::raw('(((all_teachers - come_teachers) / all_teachers) * 100) as not_come_percentage'),
                 DB::raw('((late_teachers / all_teachers) * 100) as late_percentage')
             )
-            ->whereBetween('date', [$startDate, $endDate])->orderBy('date','Desc')
+            ->whereBetween('date', [$startDate, $endDate])
+            ->orderBy('date', 'Desc')
             ->get();
 
         return response()->json([
             'month' => $month,
             'daily_statistics' => $dailyStatistics,
         ]);
+
     }
 }
