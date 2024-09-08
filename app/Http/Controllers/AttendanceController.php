@@ -27,8 +27,6 @@ class AttendanceController extends Controller
     {
         $result = $request->validated();
 
-        Log::info('info' , $result['data']);
-
         DB::beginTransaction();
 
         foreach ($result['data'] as $data) {
@@ -79,6 +77,9 @@ class AttendanceController extends Controller
     private function createAttendance($entity, $data, $kind)
     {
         $device = Device::query()->where('name', '=', $data['DeviceName'])->first();
+        if (!$device){
+            Log::info($data);
+        }
         $attendanceData = [
             'date' => $data['AccessDate'],
             'time' => $data['AccessTime'],
