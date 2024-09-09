@@ -37,7 +37,6 @@ class RecordTeacherStatistics
             $teachers = Teacher::pluck('id');
 
             $come_teachers_count = $this->comers('teacher', $teachers,$attendance);
-            Log::info($come_teachers_count);
             $come_employees_count = $this->comers('employee', $teachers,$attendance);
 
             $late_teachers_count = $this->laters('teacher', $teachers, $attendance);
