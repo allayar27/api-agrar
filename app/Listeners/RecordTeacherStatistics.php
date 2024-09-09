@@ -9,6 +9,7 @@ use App\Models\EducationDays;
 use App\Models\EmployeeEducationDays;
 use App\Models\Teacher;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 class RecordTeacherStatistics
@@ -36,6 +37,7 @@ class RecordTeacherStatistics
             $teachers = Teacher::pluck('id');
 
             $come_teachers_count = $this->comers('teacher', $teachers,$attendance);
+            Log::info($come_teachers_count);
             $come_employees_count = $this->comers('employee', $teachers,$attendance);
 
             $late_teachers_count = $this->laters('teacher', $teachers, $attendance);
