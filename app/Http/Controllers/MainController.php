@@ -11,6 +11,7 @@ use App\Models\Attendance;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\Models\EducationDays;
+use Illuminate\Support\Facades\Log;
 
 class MainController extends Controller
 {
@@ -30,6 +31,7 @@ class MainController extends Controller
         $all_teachers = Teacher::query()->where('kind','teacher')->count();
         $all_employees = Teacher::query()->where('kind','employee')->count();
         $teachersStatistics = EducationDays::where('date', $day) ? EducationDays::query()->where('date', $day)->first() : null;
+        Log::info($teachersStatistics);
         $employeesStatistics = EmployeeEducationDays::query()->where('date',$day) ? EmployeeEducationDays::query()->where('date', $day)->first() : null;
         return $this->data([
             'all_students' => $students,
