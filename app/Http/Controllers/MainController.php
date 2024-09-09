@@ -30,8 +30,8 @@ class MainController extends Controller
         $this->calculatestudents($faculties, $day);
         $all_teachers = Teacher::query()->where('kind','teacher')->count();
         $all_employees = Teacher::query()->where('kind','employee')->count();
+        Log::info($day);
         $teachersStatistics = EducationDays::where('date', $day) ? EducationDays::query()->where('date', $day)->first() : null;
-        Log::info($teachersStatistics);
         $employeesStatistics = EmployeeEducationDays::query()->where('date',$day) ? EmployeeEducationDays::query()->where('date', $day)->first() : null;
         return $this->data([
             'all_students' => $students,
