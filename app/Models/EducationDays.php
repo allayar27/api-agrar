@@ -10,7 +10,5 @@ class EducationDays extends Model
     use HasFactory;
     protected $guarded = ['id'];
 
-    public static function where(string $string, mixed $day)
-    {
-    }
+  protected $table = 'education_days';
 }
