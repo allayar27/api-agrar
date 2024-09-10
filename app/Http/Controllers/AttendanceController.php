@@ -39,6 +39,8 @@ class AttendanceController extends Controller
                 if ($student) {
                     $attendance = $this->createAttendance($student, $data, 'student');
                     event(new StudentAttendanceCreated($attendance));
+                }else{
+                    Log::error("Student Not Found". $data);
                 }
             } elseif ($data['PersonGroup'] == 'teacher' || $data['PersonGroup'] == 'employee') {
                 $teacher = Teacher::query()->where('hemis_id', $id)->first();
@@ -52,6 +54,8 @@ class AttendanceController extends Controller
                     }
                     $attendance = $this->createAttendance($teacher, $data, $kind);
                     event(new TeacherAttendanceCreated($attendance));
+                }else{
+                    Log::error("Teacher Not Found". $data);
                 }
             }
         }
