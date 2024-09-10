@@ -26,7 +26,7 @@ Route::middleware('auth:sanctum')->group(function(){
 
 Route::post('attendance/add', [AttendanceController::class,'create']);
 Route::get('groups', [App\Http\Controllers\GroupController::class, 'allGroups']);
-
+Route::get('groups/{id}',[\App\Http\Controllers\GroupController::class, 'getGroupById']);
 
 //faculties
 

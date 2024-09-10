@@ -54,4 +54,25 @@ class GroupController extends Controller
             'data' => $paginatedGroups->items(),
         ]);
     }
+
+    public function getGroupById($id)
+    {
+        $group = Group::query()->findOrFail($id);
+
+        $data = [
+            'group_id' => $group->id,
+            'group_name' => $group->name,
+            'hemis_id' => $group->hemis_id,
+            'faculty_id' => $group->faculty_id,
+            'total_students' => $group->students()->count(),
+            'students' => $group->students
+        ];
+
+        return response()->json([
+            'success' => true,
+            'data' => $data
+        ],200);
+
+    }
+
 }
