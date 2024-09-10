@@ -4,17 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Events\StudentAttendanceCreated;
 use App\Events\TeacherAttendanceCreated;
-use App\Helpers\ErrorAddHelper;
 use App\Http\Requests\Attendance\StoreAttendanceRequest;
 use App\Models\Attendance;
 use App\Models\Device;
 use App\Models\Student;
 use App\Models\Teacher;
 use Carbon\Carbon;
-use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class AttendanceController extends Controller
@@ -23,46 +20,39 @@ class AttendanceController extends Controller
      * @param StoreAttendanceRequest $request
      * @return JsonResponse
      */
-    public function create(StoreAttendanceRequest $request):JsonResponse
+    public function create(StoreAttendanceRequest $request)
     {
         $result = $request->validated();
+        $filtered = collect($result['data'])
+            ->groupBy(function ($item) {
+                return $item['EmployeeID'] . '_' . $item['DeviceName'];
+            })
+            ->map(function ($group) {
+                return $group->sortByDesc('AccessTime')->first();
+            })
+            ->values();
 
-        DB::beginTransaction();
-
-        foreach ($result['data'] as $data) {
+        foreach ($filtered as $data) {
             $id = $data['EmployeeID'];
-            try {
-                if ($data['PersonGroup'] != 'teacher' && $data['PersonGroup'] != 'employee')
-                {
-                    $student = Student::query()->where('hemis_id', '=', $id)->first();
-                    if ($student) {
-                        $attendance = $this->createAttendance($student, $data, 'student');
-                        event(new StudentAttendanceCreated($attendance));
-                    }
-                } elseif ($data['PersonGroup'] == 'teacher' || $data['PersonGroup'] == 'employee')
-                {
-                    $teacher = Teacher::query()->where('hemis_id', $id)->first();
-
-                    if($teacher){
-                        if($data['PersonGroup'] == 'teacher'){
-                            $kind = 'teacher';
-                        }
-                        if($data['PersonGroup'] == 'employee'){
-                            $kind = 'employee';
-                        }
-                        $attendance = $this->createAttendance($teacher, $data, $kind);
-                        event(new TeacherAttendanceCreated($attendance));
-                    }
+            if ($data['PersonGroup'] != 'teacher' && $data['PersonGroup'] != 'employee') {
+                $student = Student::query()->where('hemis_id', '=', $id)->first();
+                if ($student) {
+                    $attendance = $this->createAttendance($student, $data, 'student');
+                    event(new StudentAttendanceCreated($attendance));
                 }
-                DB::commit();
-            } catch (Exception $e) {
-                DB::rollBack();
-                ErrorAddHelper::logException($e);
-                return response()->json([
-                    'error' => 'An error occurred while recording attendance.',
-                    'details' => $e->getMessage(),
-                    'line' => $e->getLine(),
-                ], $e->getCode() ?: 500);
+            } elseif ($data['PersonGroup'] == 'teacher' || $data['PersonGroup'] == 'employee') {
+                $teacher = Teacher::query()->where('hemis_id', $id)->first();
+
+                if ($teacher) {
+                    if ($data['PersonGroup'] == 'teacher') {
+                        $kind = 'teacher';
+                    }
+                    if ($data['PersonGroup'] == 'employee') {
+                        $kind = 'employee';
+                    }
+                    $attendance = $this->createAttendance($teacher, $data, $kind);
+                    event(new TeacherAttendanceCreated($attendance));
+                }
             }
         }
         return $this->success('Attendance created successfully', 201);
@@ -77,7 +67,7 @@ class AttendanceController extends Controller
     private function createAttendance($entity, $data, $kind)
     {
         $device = Device::query()->where('name', '=', $data['DeviceName'])->first();
-        if (!$device){
+        if (!$device) {
             Log::info($data);
         }
         $attendanceData = [
