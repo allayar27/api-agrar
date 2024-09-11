@@ -71,7 +71,7 @@ class AttendanceController extends Controller
     {
         $device = Device::query()->where('name', '=', $data['DeviceName'])->first();
         if (!$device) {
-            Log::info($data);
+            Log::info($data['DeviceName']." ".$data['DeviceID']." ".$data['AccessDate']);
         }
         $attendanceData = [
             'date' => $data['AccessDate'],
