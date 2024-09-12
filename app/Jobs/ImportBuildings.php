@@ -33,38 +33,39 @@ class ImportBuildings implements ShouldQueue
      */
     public function handle(): void
     {
-        $response = Http::withHeaders([
-            'accept' => 'application/json',
-            'Authorization' => 'Bearer ' . env('HEMIS_BEARER_TOKEN'),
-        ])->get(env('HEMIS_URL')."auditorium-list?page={$this->page}&limit=200");
-        if ($response->successful()) {
-            $buildings = $response->json()['data']['items'];
-            foreach ($buildings as $building) {
-                DB::beginTransaction();
-                try {
-                    $build = Building::updateOrCreate([
-                        'name' => $building['building']['name']
-                    ]);
-                    Auditorum::createOrFirst([
-                        'name' => $building['name'],
-                        'building_id' => $build->id,
-                    ]);
-                    DB::commit();
-                } catch (\Throwable $th) {
-                    DB::rollBack();
-                    ErrorAddHelper::logException($th);
-                }
-            }
-        } else {
-            Log::error('Failed to fetch buildings for page: ' . $this->page, [
-                'status' => $response->status(),
-                'body' => $response->body()
-            ]);
-        }
+        Log::info('vaqt : ', $this->page);
+//        $response = Http::withHeaders([
+//            'accept' => 'application/json',
+//            'Authorization' => 'Bearer ' . env('HEMIS_BEARER_TOKEN'),
+//        ])->get(env('HEMIS_URL')."auditorium-list?page={$this->page}&limit=200");
+//        if ($response->successful()) {
+//            $buildings = $response->json()['data']['items'];
+//            foreach ($buildings as $building) {
+//                DB::beginTransaction();
+//                try {
+//                    $build = Building::updateOrCreate([
+//                        'name' => $building['building']['name']
+//                    ]);
+//                    Auditorum::createOrFirst([
+//                        'name' => $building['name'],
+//                        'building_id' => $build->id,
+//                    ]);
+//                    DB::commit();
+//                } catch (\Throwable $th) {
+//                    DB::rollBack();
+//                    ErrorAddHelper::logException($th);
+//                }
+//            }
+//        } else {
+//            Log::error('Failed to fetch buildings for page: ' . $this->page, [
+//                'status' => $response->status(),
+//                'body' => $response->body()
+//            ]);
+//        }
     }
 
-    public function failed(\Throwable $exception)
-    {
-        Log::error('Job failed for page: ' . $this->page, ['error' => $exception->getMessage()]);
-    }
+//    public function failed(\Throwable $exception)
+//    {
+//        Log::error('Job failed for page: ' . $this->page, ['error' => $exception->getMessage()]);
+//    }
 }
