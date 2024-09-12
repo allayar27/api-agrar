@@ -55,14 +55,14 @@ return [
     |
     */
 
-    'driver' => env('TELESCOPE_DRIVER', 'redis'),
+    'driver' => env('TELESCOPE_DRIVER', 'database'),
 
     'storage' => [
-        'redis' => [
-            'connection' => env('TELESCOPE_REDIS_CONNECTION', 'default'),
+        'database' => [
+            'connection' => env('DB_CONNECTION', 'mysql'),
+            'chunk' => 1000,
         ],
     ],
-
 
     /*
     |--------------------------------------------------------------------------
