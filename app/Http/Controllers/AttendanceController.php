@@ -100,7 +100,7 @@ class AttendanceController extends Controller
         $day = $request->get('day') ?? Carbon::today();
         $query = Attendance::with(['group', 'faculty','device.building'])
             ->where('date', $day)
-            ->latest()->take(20);
+            ->orderBy('date_time','Desc')->take(20);
         if ($request->has('group_id')) {
             $query->where('group_id', $request->get('group_id'));
         }
