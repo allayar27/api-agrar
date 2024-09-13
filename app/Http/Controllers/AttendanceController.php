@@ -18,7 +18,7 @@ class AttendanceController extends Controller
 {
     /**
      * @param StoreAttendanceRequest $request
-     * @return JsonResponse
+     * @return JsonResponse 
      */
     public function create(StoreAttendanceRequest $request)
     {
@@ -116,7 +116,9 @@ class AttendanceController extends Controller
                 'date' => $item->date,
                 'time' => $item->time,
                 'type' => $item->type,
+                'kind' => $item->kind
                 'building' => $item->device->building->name,
+
             ];
             if ($item->kind == 'student') {
                 $result['group'] = [

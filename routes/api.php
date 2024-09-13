@@ -27,9 +27,10 @@ Route::middleware('auth:sanctum')->group(function(){
 Route::post('attendance/add', [AttendanceController::class,'create']);
 Route::get('groups', [App\Http\Controllers\GroupController::class, 'allGroups']);
 Route::get('groups/{id}',[\App\Http\Controllers\GroupController::class, 'getGroupById']);
+// Route::get('reports', [\App\Http\Controllers\GroupController::class, 'reports']);
+// Route::get('reports/day', [\App\Http\Controllers\GroupController::class, 'dailyGroupReport']);
 
 //faculties
-
 
 Route::get('faculties', [FacultyController::class, 'allFaculties']);
 Route::get('faculties2', [FacultyController::class, 'allFaculties2']);
