@@ -23,15 +23,14 @@ class AttendanceController extends Controller
     public function create(StoreAttendanceRequest $request)
     {
         $result = $request->validated();
-        $filtered = collect($result['data'])
+        $filtered =  collect($result['data'])
             ->groupBy(function ($item) {
-                return $item['EmployeeID'] . '_' . $item['DeviceName'];
+                return $item['EmployeeID'] . '_' . $item['AccessDate'] . '_' . $item['PersonGroup'] . '_' . $item['DeviceName'];
             })
             ->map(function ($group) {
-                return $group->sortByDesc('AccessTime')->first();
-            })
-            ->values();
-
+                return $group->sortByDesc('AccessTime')->first(); // AccessTime bo'yicha oxirgi yozuvni olish
+            })->values();
+//        return $filtered;
         foreach ($filtered as $data) {
             $id = $data['EmployeeID'];
             if ($data['PersonGroup'] != 'teacher' && $data['PersonGroup'] != 'employee') {
@@ -40,7 +39,7 @@ class AttendanceController extends Controller
                     $attendance = $this->createAttendance($student, $data, 'student');
                     event(new StudentAttendanceCreated($attendance));
                 }else{
-                    Log::error("Student Not Found". $data['EmployeeID'],$data['PersonGroup']);
+                    Log::info("Student Not Found ". $data['EmployeeID']." ".$data['PersonGroup']);
                 }
             } elseif ($data['PersonGroup'] == 'teacher' || $data['PersonGroup'] == 'employee') {
                 $teacher = Teacher::query()->where('hemis_id', $id)->first();
@@ -55,7 +54,7 @@ class AttendanceController extends Controller
                     $attendance = $this->createAttendance($teacher, $data, $kind);
                     event(new TeacherAttendanceCreated($attendance));
                 }else{
-                    Log::error("Teacher Not Found". $data['EmployeeID'],$data['PersonGroup']);
+                    Log::info("Teacher Not Found ". $data['EmployeeID']." ".$data['PersonGroup']);
                 }
             }
         }
@@ -72,7 +71,7 @@ class AttendanceController extends Controller
     {
         $device = Device::query()->where('name', '=', $data['DeviceName'])->first();
         if (!$device) {
-            Log::info($data);
+            Log::info($data['DeviceName']." ".$data['DeviceID']." ".$data['AccessDate']);
         }
         $attendanceData = [
             'date' => $data['AccessDate'],
@@ -99,9 +98,9 @@ class AttendanceController extends Controller
     public function lastComers(Request $request): JsonResponse
     {
         $day = $request->get('day') ?? Carbon::today();
-        $query = Attendance::with(['group', 'faculty'])
+        $query = Attendance::with(['group', 'faculty','device.building'])
             ->where('date', $day)
-            ->latest()->take(20);
+            ->orderBy('date_time','Desc')->take(20);
         if ($request->has('group_id')) {
             $query->where('group_id', $request->get('group_id'));
         }
@@ -118,6 +117,8 @@ class AttendanceController extends Controller
                 'time' => $item->time,
                 'type' => $item->type,
                 'kind' => $item->kind
+                'building' => $item->device->building->name,
+
             ];
             if ($item->kind == 'student') {
                 $result['group'] = [
