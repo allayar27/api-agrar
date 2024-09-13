@@ -33,7 +33,7 @@ class ImportBuildings implements ShouldQueue
      */
     public function handle(): void
     {
-        Log::log('time : ' ,$this->page);
+        Log::info('time');
 //        $response = Http::withHeaders([
 //            'accept' => 'application/json',
 //            'Authorization' => 'Bearer ' . env('HEMIS_BEARER_TOKEN'),
