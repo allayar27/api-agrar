@@ -2,6 +2,7 @@
 
 namespace App\Listeners;
 
+use App\Models\Device;
 use Carbon\Carbon;
 use App\Models\Student;
 use App\Models\Attendance;
@@ -37,9 +38,12 @@ class RecordStudentStatistics
             $groupIds = $group->students()->pluck('id');
             $facultyId = $attendance->faculty_id;
             $today = $attendance->date;
+            $device = Device::query()->with('building')->findOrFail($attendance->device_id);
+//            dd($device->building['type']);
             DB::beginTransaction();
             $time_in = "09:00:00";
-            if ($time_in !== null) {
+            if ($time_in !== null && $device !== null && $device->building['type'] != 'residential')
+            {
                 $attendances = Attendance::where('kind', 'student')
                     ->where('date', $today)
                     ->where('type', 'in')

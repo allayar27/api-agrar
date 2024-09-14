@@ -5,6 +5,7 @@ namespace App\Listeners;
 use App\Events\TeacherAttendanceCreated;
 use App\Helpers\ErrorAddHelper;
 use App\Models\Attendance;
+use App\Models\Device;
 use App\Models\EducationDays;
 use App\Models\EmployeeEducationDays;
 use App\Models\Teacher;
@@ -30,8 +31,8 @@ class RecordTeacherStatistics
         DB::beginTransaction();
         try {
             $attendance = $event->attendance;
-
-            if (!$attendance) {
+            $device = Device::query()->with('building')->findOrFail($attendance->device_id);
+            if (!$attendance && $device !== null && $device->building['type'] != 'residential') {
                 return;
             }
             $teachers = Teacher::pluck('id');

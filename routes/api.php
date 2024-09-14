@@ -37,6 +37,7 @@ Route::get('faculties2', [FacultyController::class, 'allFaculties2']);
 Route::get('main/all',[MainController::class, 'index']);
 Route::get('main/students',[StudentController::class, 'allStudents']);
 Route::get('main/late_comers',[StudentController::class, 'lateComers']);
+Route::post('import',[StudentController::class, 'import']);
 Route::get('main/note_comers',[StudentController::class, 'noteComers']);
 Route::get('monthly',[StudentController::class, 'monthly']);
 Route::get('student/latest/{id}',[StudentController::class, 'studentAttendance']); 
