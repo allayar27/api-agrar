@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\NoteComersRequest;
 use App\Http\Requests\Student\LateStudentsRequest;
+use App\Http\Requests\Student\StudentMonthlyRequest;
+use App\Models\Attendance;
 use App\Models\Building;
 use App\Models\Group;
 use App\Models\GroupEducationdays;
@@ -35,6 +37,7 @@ class StudentController extends Controller
         if ($request->has('group_id')) {
             $query->where('group_id', $request->input('group_id'));
         }
+
         $students = $query->with('group', 'faculty')->get();
         $students = $students->map(function ($student) use ($day) {
             return [
@@ -75,7 +78,7 @@ class StudentController extends Controller
         ]);
     }
 
-    public function lateComers(LateStudentsRequest $request): JsonResponse
+    public function lateComers(LateStudentsRequest $request)
     {
 
         $day = $request->input('day', Carbon::today()->format('Y-m-d'));
@@ -89,7 +92,7 @@ class StudentController extends Controller
                 $query->where('date', $day);
             }
         ])->withCount('students')->where('faculty_id', $request->faculty_id)->get();
-
+        
         $result = $groups->map(function ($group) use ($day) {
             $educationDay = $group->groupEducationDays->first();
             $totalStudents = $group->students_count ?? 0;
@@ -212,6 +215,7 @@ class StudentController extends Controller
                 'faculty'
             ])
             ->findOrFail($id);
+
         $lastAttendance = $student->attendances->first();
         $building = Building::query()->findOrFail($lastAttendance->device_id);
         return response()->json([
@@ -271,7 +275,137 @@ class StudentController extends Controller
             'success' => true,
             'data' => $statistics,
         ]);
+    }
+
+    public function mothlyNotComers(StudentMonthlyRequest $request)
+    {
+        $request = $request->validated();
+        $perPage = $request->input('per_page', 10);
+        $month = $request->input('month') ?? Carbon::now()->format('Y-m');
+        $startOfMonth = Carbon::createFromFormat('Y-m', $month)->startOfMonth()->toDateString();
+        $endOfMonth = Carbon::createFromFormat('Y-m', $month)->endOfMonth()->toDateString();
+
+        $groups = Group::with([
+            'students.attendances' => function ($query) use ($startOfMonth, $endOfMonth) {
+                $query->whereBetween('date', [$startOfMonth, $endOfMonth]);
+            }
+        ])->withCount('students')->where('faculty_id', $request['faculty_id'])->get();
+
+        $results = $groups->map(function ($group) {
+            $total_students = $group->students_count ?? 0;
+            $absent_students = [];
+
+            foreach ($group->students as $student) {
+                $attendances = $student->attendances;
+                if ($attendances->isEmpty()) {
+                    $absent_students[] = [
+                        'id' => $student->id,
+                        'name' => $student->name,
+                    ];
+                }
+
+                return [
+                    'id' => $group->id,
+                    'group_name' => $group->name,
+                    'total_students' => $total_students,
+                    'absent_students_count' => count($absent_students),
+                    'absent_students' => $absent_students
+                ];
+            }
+        })->sortBy('absent_students_count');
+
+        $currentPage = LengthAwarePaginator::resolveCurrentPage();
+        $pagedResult = new LengthAwarePaginator(
+            $results->forPage($currentPage, $perPage)->values(),
+            $results->count(),
+            $perPage,
+            $currentPage,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
+
+        return response()->json([
+            'success' => true,
+            'pagination' => [
+                'total' => $pagedResult->total(),
+                'current_page' => $pagedResult->currentPage(),
+                'last_page' => $pagedResult->lastPage(),
+                'per_page' => $pagedResult->perPage(),
+                'total_pages' => $pagedResult->lastPage(),
+            ],
+            'data' => $pagedResult->items(),
+        ]);
+    }
+
+    public function mothlyLateComers(StudentMonthlyRequest $request)
+    {
+        $data = $request->validated();
+
+        $month = $data['month'] ?? Carbon::now()->format('Y-m');
+        $startOfMonth = Carbon::parse($month)->startOfMonth();
+
+        $endOfMonth = Carbon::parse($month)->endOfMonth();
+        $perPage = $request->input('per_page', 10);
+
+        $groups = Group::with(['students'])->withCount('students')->where('faculty_id', $data['faculty_id'])->get();
+        
+        $result = $groups->map(function ($group) use ($startOfMonth, $endOfMonth) {
+            $totalStudents = $group->students_count ?? 0;
+            $lateComers = [];
+
+            for ($date = $startOfMonth; $date->lte($endOfMonth); $date->addDay()) {
+                foreach ($group->students as $student) {
+                    $expectedTime = $student->time_in($date);
+                    if (!$expectedTime) {
+                        continue;
+                    }
+                    $attendance = $student->attendances()->where('date', $date->toDateString())->first();
+
+                    if ($attendance && $attendance->time > $expectedTime) {
+                        $late = Carbon::parse($attendance->time)->diffInMinutes(Carbon::parse($expectedTime));
+
+                        // добавляем в массив студенты которые опоздали
+                        $lateComers[] = [
+                            'student_id' => $student->id,
+                            'student_name' => $student->name,
+                            'date' => $date->toDateString(),
+                            'expected_time_in' => $expectedTime,
+                            'actual_time_in' => $attendance->time,
+                            'late' => $late . ' minutes',
+                        ];
+                    }
+                }
+            }
+
+            return [
+                'group_id' => $group->id,
+                'group_name' => $group->name,
+                'total_students' => $totalStudents,
+                'late_comers_count' => count($lateComers),
+                'late_comers' => $lateComers,
+            ];
+        })->sortByDesc('late_comers');
 
 
+        $currentPage = LengthAwarePaginator::resolveCurrentPage();
+        $pagedResult = new LengthAwarePaginator(
+            $result->forPage($currentPage, $perPage)->values(),
+            $result->count(),
+            $perPage,
+            $currentPage,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
+
+        return response()->json([
+            'success' => true,
+            'pagination' => [
+                'total' => $pagedResult->total(),
+                'current_page' => $pagedResult->currentPage(),
+                'last_page' => $pagedResult->lastPage(),
+                'per_page' => $pagedResult->perPage(),
+                'total_pages' => $pagedResult->lastPage(),
+            ],
+            'data' => $pagedResult->items(),
+
+        ]);
     }
 }

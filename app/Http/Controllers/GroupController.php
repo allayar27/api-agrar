@@ -75,37 +75,75 @@ class GroupController extends Controller
 
     }
 
-    // public function reports()
-    // {
-    //     $day = request('day') ? request('day') : Carbon::today()->format('Y-m-d');
-    //     $faculties = Faculty::with([
-    //         'facultyEducationDays' => function ($query) use ($day) {
-    //             $query->where('day', $day);
-    //         }
-    //     ])->withCount('students')->get();
+    public function monthReport(Request $request)
+    {
+        $request->validate([
+            'month' => 'required|date_format:Y-m',
+            'faculty_id' => 'required|exists:faculties,id',
+        ]);
 
-    //     $results = $faculties->map(function($faculty) use ($day) {
-    //         $total_students = $faculty->students_count;
-    //         $educationDay = $faculty->facultyEducationDays->where('day', $day)->first();
-    //         $come_students = $educationDay ? $educationDay->come_students : 0;
-    //         $late_students = $educationDay ? $educationDay->late_students : 0;
+        $month = $request->input('month') ?? Carbon::now()->format('Y-m');
+        $startOfMonth = Carbon::createFromFormat('Y-m', $month)->startOfMonth()->toDateString();
+        $endOfMonth = Carbon::createFromFormat('Y-m', $month)->endOfMonth()->toDateString();
 
-    //         return [
-    //             'id' => $faculty->id,
-    //             'faculty' => $faculty->name,
-    //             'total_students' => $total_students,
-    //             'come_students' => $come_students,
-    //             'late_students' => $late_students,
-    //         ];
-    //     });
+        $perPage = $request->input('per_page', 10);
 
-    //     return response()->json([
-    //         'success' => true,
-    //         'total' => $faculties->count(),
-    //         'data' => $results,
-    //         'day' => $day,
-    //     ]);
-    // }
+        $faculty = Faculty::with(['groups' => function ($query) use ($startOfMonth, $endOfMonth) {
+                $query->with([
+                    'groupeducationdays' => function ($query) use ($startOfMonth, $endOfMonth) {
+                        $query->whereBetween('day', [$startOfMonth, $endOfMonth]);
+                    }
+                ])->withCount('students');
+            }
+        ])->findOrFail($request['faculty_id']);
+        
+        $groups = $faculty->groups->map(function ($group) use ($startOfMonth, $endOfMonth) {
+            
+            $groupEducationDays = $group->groupeducationdays->whereBetween('day', [$startOfMonth, $endOfMonth]);
+            if ($groupEducationDays->count() > 0) {
+                $comeStudentsSum = $groupEducationDays->sum('come_students');
+                $allStudentsSum = $groupEducationDays->sum('all_students');
+                $lateStudentsSum = $groupEducationDays->sum('late_students');
+                $come_percent = $allStudentsSum > 0 ? ($comeStudentsSum / $allStudentsSum) * 100 : 0;
+                $late_percent = $allStudentsSum > 0 ? ($lateStudentsSum / $allStudentsSum) * 100 : 0;
+            }
+            else {
+                $comeStudentsSum = 0;
+                $allStudentsSum = 0;
+                $lateStudentsSum = 0;
+                $come_percent = 0;
+                $late_percent = 0;
+            }
+
+            return [
+                'group_id' => $group->id,
+                'group_name' => $group->name,
+                'total_students' => $group->students_count,
+                'come_students' => $comeStudentsSum,
+                'late_students' => $lateStudentsSum,
+                'come_percent' => $come_percent,
+                'late_percent' => $late_percent,
+                
+            ];
+        });
+
+        $currentPage = LengthAwarePaginator::resolveCurrentPage();
+        $paginatedGroups = new LengthAwarePaginator(
+            $groups->forPage($currentPage, $perPage)->values(),
+            $groups->count(),
+            $perPage,
+            $currentPage,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
+
+        return response()->json([
+            'total' => $paginatedGroups->total(),
+            'per_page' => $paginatedGroups->perPage(),
+            'current_page' => $paginatedGroups->currentPage(),
+            'last_page' => $paginatedGroups->lastPage(),
+            'data' => $paginatedGroups->items(),
+        ]);
+    }
 
 //     public function dailyGroupReport(Request $request)
 //     {
