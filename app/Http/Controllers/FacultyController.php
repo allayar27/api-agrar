@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Faculty;
+use App\Models\Faculty; 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
