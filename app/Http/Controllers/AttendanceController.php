@@ -7,6 +7,7 @@ use App\Events\TeacherAttendanceCreated;
 use App\Http\Requests\Attendance\StoreAttendanceRequest;
 use App\Models\Attendance;
 use App\Models\Device;
+use App\Models\Doktarant;
 use App\Models\Student;
 use App\Models\Teacher;
 use Carbon\Carbon;
@@ -30,7 +31,6 @@ class AttendanceController extends Controller
             ->map(function ($group) {
                 return $group->sortByDesc('AccessTime')->first(); // AccessTime bo'yicha oxirgi yozuvni olish
             })->values();
-//        return $filtered;
         foreach ($filtered as $data) {
             $id = $data['EmployeeID'];
             if ($data['PersonGroup'] != 'teacher' && $data['PersonGroup'] != 'employee') {
@@ -54,7 +54,15 @@ class AttendanceController extends Controller
                     $attendance = $this->createAttendance($teacher, $data, $kind);
                     event(new TeacherAttendanceCreated($attendance));
                 }else{
-                    Log::info("Teacher Not Found ". $data['EmployeeID']." ".$data['PersonGroup']);
+                    Log::info("Employee Not Found ". $data['EmployeeID']." ".$data['PersonGroup']);
+                }
+            }
+            if ($data['PersonGroup'] == 'doctoront') {
+                $doctorant = Doktarant::query()->where('hemis_id', '=', $id)->first();
+                if ($doctorant) {
+                    $attendance = $this->createAttendance($doctorant, $data, 'other');
+                }else{
+                    Log::info("Doctorant  ". $data['PersonGroup']." ".$data['EmployeeID']);
                 }
             }
         }

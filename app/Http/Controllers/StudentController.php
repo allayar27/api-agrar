@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\NoteComersRequest;
 use App\Http\Requests\Student\LateStudentsRequest;
+use App\Imports\StudentImport;
 use App\Models\Building;
 use App\Models\Group;
 use App\Models\GroupEducationdays;
@@ -12,6 +13,8 @@ use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Artisan;
+use Maatwebsite\Excel\Facades\Excel;
 
 class StudentController extends Controller
 {
@@ -273,5 +276,14 @@ class StudentController extends Controller
         ]);
 
 
+    }
+
+    public function import(Request $request)
+    {
+        $file = $request->file('file');
+        Excel::import(new StudentImport, $file);
+        return response()->json([
+            'success' => true,
+        ]);
     }
 }
