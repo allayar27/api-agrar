@@ -284,17 +284,17 @@ class StudentController extends Controller
 
     public function mothlyNotComers(StudentMonthlyRequest $request)
     {
-        $request = $request->validated();
+        $data = $request->validated();
         $perPage = $request->input('per_page', 10);
-        $month = $request->input('month') ?? Carbon::now()->format('Y-m');
+        $month = $data['month'] ?? Carbon::now()->format('Y-m');
         $startOfMonth = Carbon::createFromFormat('Y-m', $month)->startOfMonth()->toDateString();
         $endOfMonth = Carbon::createFromFormat('Y-m', $month)->endOfMonth()->toDateString();
 
         $groups = Group::with([
             'students.attendances' => function ($query) use ($startOfMonth, $endOfMonth) {
-                $query->whereBetween('date', [$startOfMonth, $endOfMonth]);
+                $query->whereBetween('date_time', [$startOfMonth, $endOfMonth]);
             }
-        ])->withCount('students')->where('faculty_id', $request['faculty_id'])->get();
+        ])->withCount('students')->where('faculty_id', $data['faculty_id'])->get();
 
         $results = $groups->map(function ($group) {
             $total_students = $group->students_count ?? 0;
@@ -358,12 +358,13 @@ class StudentController extends Controller
             $lateComers = [];
 
             for ($date = $startOfMonth; $date->lte($endOfMonth); $date->addDay()) {
+                $day = $date->format('Y-m-d');
                 foreach ($group->students as $student) {
-                    $expectedTime = $student->time_in($date);
+                    $expectedTime = $student->time_in($day);
                     if (!$expectedTime) {
                         continue;
                     }
-                    $attendance = $student->attendances()->where('date', $date->toDateString())->first();
+                    $attendance = $student->attendances()->whereDate('date_time', $day)->first();
 
                     if ($attendance && $attendance->time > $expectedTime) {
                         $late = Carbon::parse($attendance->time)->diffInMinutes(Carbon::parse($expectedTime));
