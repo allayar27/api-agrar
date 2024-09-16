@@ -10,6 +10,7 @@ use App\Models\Device;
 use App\Models\Doktarant;
 use App\Models\Student;
 use App\Models\Teacher;
+use App\Models\UsersLog;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -39,7 +40,8 @@ class AttendanceController extends Controller
                     $attendance = $this->createAttendance($student, $data, 'student');
                     event(new StudentAttendanceCreated($attendance));
                 }else{
-                    Log::info("Student Not Found ". $data['EmployeeID']." ".$data['PersonGroup']);
+                    $this->addNotFound(hemis_id: $id,name: $data['FirstName'] . " " . $data['LastName'],PersonGroup: $data['PersonGroup'],date_time: $data['AccessDateandTime'],device_name: $data['DeviceName']);
+//                    Log::info("Student Not Found ". $data['EmployeeID']." ".$data['PersonGroup']);
                 }
             } elseif ($data['PersonGroup'] == 'teacher' || $data['PersonGroup'] == 'employee') {
                 $teacher = Teacher::query()->where('hemis_id', $id)->first();
@@ -54,7 +56,8 @@ class AttendanceController extends Controller
                     $attendance = $this->createAttendance($teacher, $data, $kind);
                     event(new TeacherAttendanceCreated($attendance));
                 }else{
-                    Log::info("Employee Not Found ". $data['EmployeeID']." ".$data['PersonGroup']);
+                    $this->addNotFound(hemis_id: $id,name: $data['FirstName'] . " " . $data['LastName'],PersonGroup: $data['PersonGroup'],date_time: $data['AccessDateandTime'],device_name: $data['DeviceName']);
+//                    Log::info("Employee Not Found ". $data['EmployeeID']." ".$data['PersonGroup']);
                 }
             }
             if ($data['PersonGroup'] == 'doctoront') {
@@ -62,7 +65,8 @@ class AttendanceController extends Controller
                 if ($doctorant) {
                     $attendance = $this->createAttendance($doctorant, $data, 'other');
                 }else{
-                    Log::info("Doctorant  ". $data['PersonGroup']." ".$data['EmployeeID']);
+                    $this->addNotFound(hemis_id: $id,name: $data['FirstName'] . " " . $data['LastName'],PersonGroup: $data['PersonGroup'],date_time: $data['AccessDateandTime'],device_name: $data['DeviceName']);
+//                    Log::info("Doctorant  ". $data['PersonGroup']." ".$data['EmployeeID']);
                 }
             }
         }
@@ -152,6 +156,17 @@ class AttendanceController extends Controller
         $latest = Attendance::query()->orderBy('id', 'desc')->take(1)->first();
         return response()->json([
             'data' => $latest['date_time']
+        ]);
+    }
+
+    public function addNotFound(?int $hemis_id, ?string $name , ? string $PersonGroup, ?string $date_time, ?string $device_name )
+    {
+        UsersLog::query()->create([
+            'hemis_id' => $hemis_id,
+            'full_name' => $name,
+            'PersonGroup' => $PersonGroup,
+            'date_time' => $date_time,
+            'device_name' => $device_name,
         ]);
     }
 }
