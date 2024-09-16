@@ -6,6 +6,7 @@ use App\Events\StudentAttendanceCreated;
 use App\Events\TeacherAttendanceCreated;
 use App\Http\Requests\Attendance\StoreAttendanceRequest;
 use App\Models\Attendance;
+use App\Models\Building;
 use App\Models\Device;
 use App\Models\Doktarant;
 use App\Models\Student;
@@ -148,9 +149,20 @@ class AttendanceController extends Controller
         ]);
     }
 
-    public function latest(): JsonResponse
+    public function latest(?string $device_name): JsonResponse
     {
-        $latest = Attendance::query()->orderBy('id', 'desc')->take(1)->first();
+        $device = Device::query()->where('name',$device_name)->first();
+        if($device){
+            $building = Building::query()->find($device->building_id);
+            if($building->id ==3 && $building->name == 'Korpus_3'){
+                $devices = $building->devices()->pluck('id')->toArray();
+                $latest = Attendance::query()->whereIn('device_id', $devices)->orderBy('date_time','Desc')->take(1)->get();
+                return response()->json([
+                    'data' => $latest['date_time'],
+                ]);
+            }
+        }
+        $latest = Attendance::query()->orderBy('date_time', 'desc')->take(1)->first();
         return response()->json([
             'data' => $latest['date_time']
         ]);
