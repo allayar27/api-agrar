@@ -149,8 +149,9 @@ class AttendanceController extends Controller
         ]);
     }
 
-    public function latest(?string $device_name): JsonResponse
+    public function latest(Request $request): JsonResponse
     {
+        $device_name = $request->get('device_name');
         $device = Device::query()->where('name',$device_name)->first();
         if($device){
             $building = Building::query()->find($device->building_id);
