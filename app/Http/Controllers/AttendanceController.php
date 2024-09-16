@@ -41,7 +41,6 @@ class AttendanceController extends Controller
                     event(new StudentAttendanceCreated($attendance));
                 }else{
                     $this->addNotFound(hemis_id: $id,name: $data['FirstName'] . " " . $data['LastName'],PersonGroup: $data['PersonGroup'],date_time: $data['AccessDateandTime'],device_name: $data['DeviceName']);
-//                    Log::info("Student Not Found ". $data['EmployeeID']." ".$data['PersonGroup']);
                 }
             } elseif ($data['PersonGroup'] == 'teacher' || $data['PersonGroup'] == 'employee') {
                 $teacher = Teacher::query()->where('hemis_id', $id)->first();
@@ -57,7 +56,6 @@ class AttendanceController extends Controller
                     event(new TeacherAttendanceCreated($attendance));
                 }else{
                     $this->addNotFound(hemis_id: $id,name: $data['FirstName'] . " " . $data['LastName'],PersonGroup: $data['PersonGroup'],date_time: $data['AccessDateandTime'],device_name: $data['DeviceName']);
-//                    Log::info("Employee Not Found ". $data['EmployeeID']." ".$data['PersonGroup']);
                 }
             }
             if ($data['PersonGroup'] == 'doctoront') {
@@ -66,7 +64,6 @@ class AttendanceController extends Controller
                     $attendance = $this->createAttendance($doctorant, $data, 'other');
                 }else{
                     $this->addNotFound(hemis_id: $id,name: $data['FirstName'] . " " . $data['LastName'],PersonGroup: $data['PersonGroup'],date_time: $data['AccessDateandTime'],device_name: $data['DeviceName']);
-//                    Log::info("Doctorant  ". $data['PersonGroup']." ".$data['EmployeeID']);
                 }
             }
         }
