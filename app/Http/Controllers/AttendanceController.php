@@ -184,18 +184,25 @@ class AttendanceController extends Controller
 
     public function residential(Request $request): JsonResponse
     {
-        $today = $request->input('day', now()->format('Y-m-d'));
-        $to = "10:00:00";
+        $today = $request->input('day', now()->subDay()->format('Y-m-d'));
+        $to = "21:00:00";
         $from = "05:00:00";
         $buildings = Building::query()->where('type', 'residential')->pluck('id')->toArray();
-        dd($buildings);
         $devices = Device::query()->whereIn('building_id', $buildings)->pluck('id')->toArray();
-        $query = Attendance::query()->whereIn('device_id', $devices)->where('time', '>', $to)
-            ->where('time', '<', $from)
-            ->where('date', $today)
-            ->where('kind', 'student')
-            ->orderBy('date_time', 'Desc')->take(20);
 
+        $query = Attendance::query()
+            ->whereIn('device_id', $devices)
+            ->where(function($q) use ($to, $from, $today) {
+                $q->where('time', '>', $to)
+                    ->where('date', $today);
+            })
+            ->orWhere(function($q) use ($from, $today) {
+                $q->where('time', '<', $from)
+                    ->where('date', $today);
+            })
+            ->where('kind', 'student')
+            ->orderBy('date_time', 'desc')
+            ->take(20);
         if ($request->has('group_id')) {
             $query->where('group_id', $request->get('group_id'));
         }
