@@ -158,9 +158,11 @@ class AttendanceController extends Controller
             if($building->id ==3 && $building->name == 'Korpus_3'){
                 $devices = $building->devices()->pluck('id')->toArray();
                 $latest = Attendance::query()->whereIn('device_id', $devices)->orderBy('date_time','Desc')->take(1)->get();
-                return response()->json([
-                    'data' => $latest['date_time'],
-                ]);
+                if ($latest){
+                    return response()->json([
+                        'data' => $latest['date_time'],
+                    ]);
+                }
             }
         }
         $latest = Attendance::query()->orderBy('date_time', 'desc')->take(1)->first();
