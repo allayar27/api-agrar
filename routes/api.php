@@ -40,7 +40,7 @@ Route::get('main/late_comers',[StudentController::class, 'lateComers']);
 Route::post('import',[StudentController::class, 'import']);
 Route::get('main/note_comers',[StudentController::class, 'noteComers']);
 Route::get('monthly',[StudentController::class, 'monthly']);
-Route::get('student/latest/{id}',[StudentController::class, 'studentAttendance']); 
+Route::get('student/latest/{id}',[StudentController::class, 'studentAttendance']);
 Route::get('student/monthly/not_comers', [StudentController::class, 'mothlyNotComers']);
 Route::get('student/monthly/late_comers', [StudentController::class, 'mothlyLateComers']);
 // Route::get('main/student',[MainController::class, 'student']);
@@ -50,6 +50,7 @@ Route::get('teachers/days',[TeacherController::class, 'getMonthlyStatistics']);
 Route::get('employees/days',[TeacherController::class, 'getEmployeesMonthly']);
 
 Route::get('lastComers',[AttendanceController::class,'lastComers']);
+Route::get('residential',[AttendanceController::class,'residential']);
 Route::get('latest',[AttendanceController::class,'latest']);
 
 Route::post('device/add',[DeviceController::class,'create']);

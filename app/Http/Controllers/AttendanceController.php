@@ -26,7 +26,7 @@ class AttendanceController extends Controller
     public function create(StoreAttendanceRequest $request)
     {
         $result = $request->validated();
-        $filtered =  collect($result['data'])
+        $filtered = collect($result['data'])
             ->groupBy(function ($item) {
                 return $item['EmployeeID'] . '_' . $item['AccessDate'] . '_' . $item['PersonGroup'] . '_' . $item['DeviceName'];
             })
@@ -40,8 +40,8 @@ class AttendanceController extends Controller
                 if ($student) {
                     $attendance = $this->createAttendance($student, $data, 'student');
                     event(new StudentAttendanceCreated($attendance));
-                }else{
-                    $this->addNotFound(hemis_id: $id,name: $data['FirstName'] . " " . $data['LastName'],PersonGroup: $data['PersonGroup'],date_time: $data['AccessDateandTime'],device_name: $data['DeviceName']);
+                } else {
+                    $this->addNotFound(hemis_id: $id, name: $data['FirstName'] . " " . $data['LastName'], PersonGroup: $data['PersonGroup'], date_time: $data['AccessDateandTime'], device_name: $data['DeviceName']);
                 }
             } elseif ($data['PersonGroup'] == 'teacher' || $data['PersonGroup'] == 'employee') {
                 $teacher = Teacher::query()->where('hemis_id', $id)->first();
@@ -55,16 +55,16 @@ class AttendanceController extends Controller
                     }
                     $attendance = $this->createAttendance($teacher, $data, $kind);
                     event(new TeacherAttendanceCreated($attendance));
-                }else{
-                    $this->addNotFound(hemis_id: $id,name: $data['FirstName'] . " " . $data['LastName'],PersonGroup: $data['PersonGroup'],date_time: $data['AccessDateandTime'],device_name: $data['DeviceName']);
+                } else {
+                    $this->addNotFound(hemis_id: $id, name: $data['FirstName'] . " " . $data['LastName'], PersonGroup: $data['PersonGroup'], date_time: $data['AccessDateandTime'], device_name: $data['DeviceName']);
                 }
             }
             if ($data['PersonGroup'] == 'doctoront') {
                 $doctorant = Doktarant::query()->where('hemis_id', '=', $id)->first();
                 if ($doctorant) {
                     $attendance = $this->createAttendance($doctorant, $data, 'other');
-                }else{
-                    $this->addNotFound(hemis_id: $id,name: $data['FirstName'] . " " . $data['LastName'],PersonGroup: $data['PersonGroup'],date_time: $data['AccessDateandTime'],device_name: $data['DeviceName']);
+                } else {
+                    $this->addNotFound(hemis_id: $id, name: $data['FirstName'] . " " . $data['LastName'], PersonGroup: $data['PersonGroup'], date_time: $data['AccessDateandTime'], device_name: $data['DeviceName']);
                 }
             }
         }
@@ -81,7 +81,7 @@ class AttendanceController extends Controller
     {
         $device = Device::query()->where('name', '=', $data['DeviceName'])->first();
         if (!$device) {
-            Log::info($data['DeviceName']." ".$data['DeviceID']." ".$data['AccessDate']);
+            Log::info($data['DeviceName'] . " " . $data['DeviceID'] . " " . $data['AccessDate']);
         }
         $attendanceData = [
             'date' => $data['AccessDate'],
@@ -108,9 +108,9 @@ class AttendanceController extends Controller
     public function lastComers(Request $request): JsonResponse
     {
         $day = $request->get('day') ?? Carbon::today();
-        $query = Attendance::with(['group', 'faculty','device.building'])
+        $query = Attendance::with(['group', 'faculty', 'device.building'])
             ->where('date', $day)
-            ->orderBy('date_time','Desc')->take(20);
+            ->orderBy('date_time', 'Desc')->take(20);
         if ($request->has('group_id')) {
             $query->where('group_id', $request->get('group_id'));
         }
@@ -152,13 +152,13 @@ class AttendanceController extends Controller
     public function latest(Request $request): JsonResponse
     {
         $device_name = $request->get('device_name');
-        $device = Device::query()->where('name',$device_name)->first();
-        if($device){
+        $device = Device::query()->where('name', $device_name)->first();
+        if ($device) {
             $building = Building::query()->find($device->building_id);
-            if($building->id ==3 && $building->name == 'Korpus_3'){
+            if ($building->id == 3 && $building->name == 'Korpus_3') {
                 $devices = $building->devices()->pluck('id')->toArray();
-                $latest = Attendance::query()->whereIn('device_id', $devices)->orderBy('date_time','Desc')->take(1)->first();
-                if ($latest){
+                $latest = Attendance::query()->whereIn('device_id', $devices)->orderBy('date_time', 'Desc')->take(1)->first();
+                if ($latest) {
                     return response()->json([
                         'data' => $latest['date_time'],
                     ]);
@@ -171,7 +171,7 @@ class AttendanceController extends Controller
         ]);
     }
 
-    public function addNotFound(?int $hemis_id, ?string $name , ? string $PersonGroup, ?string $date_time, ?string $device_name )
+    public function addNotFound(?int $hemis_id, ?string $name, ?string $PersonGroup, ?string $date_time, ?string $device_name)
     {
         UsersLog::query()->create([
             'hemis_id' => $hemis_id,
@@ -179,6 +179,56 @@ class AttendanceController extends Controller
             'PersonGroup' => $PersonGroup,
             'date_time' => $date_time,
             'device_name' => $device_name,
+        ]);
+    }
+
+    public function residential(Request $request): JsonResponse
+    {
+        $today = $request->input('day', now()->format('Y-m-d'));
+        $to = "10:00:00";
+        $from = "05:00:00";
+        $buildings = Building::query()->where('type', 'residential')->pluck('id')->toArray();
+        $devices = Device::query()->whereIn('building_id', $buildings)->pluck('id')->toArray();
+        $query = Attendance::query()->whereIn('device_id', $devices)->where('time', '>', $to)
+            ->where('time', '<', $from)
+            ->where('day', $today)
+            ->where('kind', 'student')
+            ->orderBy('date_time', 'Desc')->take(20);
+
+        if ($request->has('group_id')) {
+            $query->where('group_id', $request->get('group_id'));
+        }
+        if ($request->has('faculty_id')) {
+            $query->where('faculty_id', $request->get('faculty_id'));
+        }
+        $attendances = $query->get();
+        $comers = $attendances->map(function ($item) {
+            $user = $item->user;
+            $result = [
+                'id' => $user->id,
+                'name' => $user->name,
+                'date' => $item->date,
+                'time' => $item->time,
+                'type' => $item->type,
+                'kind' => $item->kind,
+                'building' => $item->device->building->name,
+
+            ];
+            if ($item->kind == 'student') {
+                $result['group'] = [
+                    'id' => $item->group->id ?? null,
+                    'name' => $item->group->name ?? null,
+                ];
+                $result['faculty'] = [
+                    'id' => $item->faculty->id ?? null,
+                    'name' => $item->faculty->name ?? null,
+                ];
+            }
+            return $result;
+        });
+        return response()->json([
+            'total' => $comers->count(),
+            'data' => $comers,
         ]);
     }
 }
