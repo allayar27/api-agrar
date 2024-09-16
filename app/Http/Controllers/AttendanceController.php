@@ -185,11 +185,10 @@ class AttendanceController extends Controller
     public function residential(Request $request): JsonResponse
     {
         $today = $request->input('day', now()->subDay()->format('Y-m-d'));
-        $to = "21:00:00";
-        $from = "05:00:00";
+        $to = "22:00:00";
+        $from = "04:00:00";
         $buildings = Building::query()->where('type', 'residential')->pluck('id')->toArray();
         $devices = Device::query()->whereIn('building_id', $buildings)->pluck('id')->toArray();
-
         $query = Attendance::query()
             ->whereIn('device_id', $devices)
             ->where(function($q) use ($to, $from, $today) {
@@ -209,7 +208,7 @@ class AttendanceController extends Controller
         if ($request->has('faculty_id')) {
             $query->where('faculty_id', $request->get('faculty_id'));
         }
-        $attendances = $query->get();
+        $attendances = $query->paginate($request->input('per_page', 20));
         $comers = $attendances->map(function ($item) {
             $user = $item->user;
             $result = [
@@ -235,6 +234,12 @@ class AttendanceController extends Controller
             return $result;
         });
         return response()->json([
+            'success' => true,
+            'pagination' =>[
+                'current_page' => $attendances->currentPage(),
+                'per_page' => $attendances->perPage(),
+                'last_page' => $attendances->lastPage(),
+            ],
             'total' => $comers->count(),
             'data' => $comers,
         ]);
