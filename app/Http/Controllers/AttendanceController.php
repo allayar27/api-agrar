@@ -188,6 +188,7 @@ class AttendanceController extends Controller
         $to = "10:00:00";
         $from = "05:00:00";
         $buildings = Building::query()->where('type', 'residential')->pluck('id')->toArray();
+        dd($buildings);
         $devices = Device::query()->whereIn('building_id', $buildings)->pluck('id')->toArray();
         $query = Attendance::query()->whereIn('device_id', $devices)->where('time', '>', $to)
             ->where('time', '<', $from)
