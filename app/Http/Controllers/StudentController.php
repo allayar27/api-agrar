@@ -104,7 +104,7 @@ class StudentController extends Controller
             $presentStudents = $educationDay->come_students ?? 0;
 
             $lateComers = [];
-            $time_in = "9:00:00";
+            $time_in = "08:30:00";
             foreach ($group->students as $student) {
                 $attendance = $student->attendances->first();
                 if ($attendance && $attendance->time > $time_in) {

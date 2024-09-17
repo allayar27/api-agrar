@@ -68,7 +68,7 @@ class RecordTeacherStatistics
 
     public function laters(string $kind, $teachers, $attendance): int
     {
-        $time_in = "09:00";
+        $time_in = "08:30";
         $late_teachers_count = Attendance::where('kind', $kind)->where('date', $attendance->date)
             ->where('type', 'in')
             ->whereIn('attendanceable_id', $teachers)

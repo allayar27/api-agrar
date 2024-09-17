@@ -41,7 +41,7 @@ class RecordStudentStatistics
             $device = Device::query()->with('building')->findOrFail($attendance->device_id);
 //            dd($device->building['type']);
             DB::beginTransaction();
-            $time_in = "09:00:00";
+            $time_in = "08:30:00";
             if ($time_in !== null && $device !== null && $device->building['type'] != 'residential')
             {
                 $attendances = Attendance::where('kind', 'student')
