@@ -22,6 +22,7 @@ class LateStudentsRequest extends FormRequest
     {
         return [
             'faculty_id' => 'required|exists:faculties,id',
+            'per_page' => 'nullable|integer'
         ];
     }
 }
