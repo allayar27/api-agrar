@@ -6,6 +6,8 @@ use App\Jobs\ImportSchedulesByDayJob;
 use App\Models\Group;
 use App\Models\StudentSchedule;
 use Illuminate\Console\Command;
+use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
 
 class ImportDays extends Command
@@ -30,12 +32,18 @@ class ImportDays extends Command
     public function handle():void
     {
         try {
+            Artisan::call('app:daily-student-schedule');
             $groups = Group::all();
-            $schedules = StudentSchedule::query()->findOrFail(27);
-            foreach ($groups as $group) {
-                ImportSchedulesByDayJob::dispatch($group->id,$schedules->id);
+            $today = now()->format('Y-m-d');
+            $schedules = StudentSchedule::query()->whereDate('startweektime' ,'<' , $today)
+                ->whereDate('endweektime' ,'>' , $today)->first();
+            if ($schedules){
+                foreach ($groups as $group) {
+                    ImportSchedulesByDayJob::dispatch($group->id,$schedules->id);
+                }
+                Log::info('Dispatched ImportSchedulesByDayJob for all groups.');
             }
-            Log::info('Dispatched ImportSchedulesByDayJob for all groups.');
+            Log::info('Schedules not found.');
         }catch (\Throwable $th){
             ErrorAddHelper::logException($th);
         }

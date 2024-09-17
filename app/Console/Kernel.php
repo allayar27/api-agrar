@@ -15,7 +15,7 @@ class Kernel extends ConsoleKernel
 //         $schedule->command('app:import-students');
 //         $schedule->command('app:import-teachers');
 //         $schedule->command('app:daily-student-schedule');
-         $schedule->command('app:import-buildings')->everySecond();
+         $schedule->command('app:import-buildings')->everyFiveMinutes();
 //        $schedule->command('app:import-days');
 
     }
