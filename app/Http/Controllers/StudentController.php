@@ -97,17 +97,17 @@ class StudentController extends Controller
                 $query->where('date', $day);
             }
         ])->withCount('students')->where('faculty_id', $request->faculty_id)->get();
-        
+
         $result = $groups->map(function ($group) use ($day) {
             $educationDay = $group->groupEducationDays->first();
             $totalStudents = $group->students_count ?? 0;
             $presentStudents = $educationDay->come_students ?? 0;
 
             $lateComers = [];
-
+            $time_in = "9:00:00";
             foreach ($group->students as $student) {
                 $attendance = $student->attendances->first();
-                if ($attendance && $attendance->time > $attendance->user->time_in($day)) {
+                if ($attendance && $attendance->time > $time_in) {
                     $late = Carbon::parse($attendance->time)->diffInMinutes(Carbon::parse($attendance->user->time_in($day)));
                     $lateComers[] = [
                         'id' => $student->id,
@@ -352,7 +352,7 @@ class StudentController extends Controller
         $perPage = $request->input('per_page', 10);
 
         $groups = Group::with(['students'])->withCount('students')->where('faculty_id', $data['faculty_id'])->get();
-        
+
         $result = $groups->map(function ($group) use ($startOfMonth, $endOfMonth) {
             $totalStudents = $group->students_count ?? 0;
             $lateComers = [];

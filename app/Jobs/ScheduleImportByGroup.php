@@ -45,8 +45,6 @@ class ScheduleImportByGroup implements ShouldQueue
 
     private function fetchScheduleData()
     {
-
-
         $response = Http::withHeaders([
             'accept' => 'application/json',
             'Authorization' => 'Bearer ' . env('HEMIS_BEARER_TOKEN'),
@@ -84,11 +82,10 @@ class ScheduleImportByGroup implements ShouldQueue
     private function getOrCreateStudentSchedule(array $item, int $academicYearId): StudentSchedule
     {
         return StudentSchedule::updateOrCreate(
-            ['startweektime' => date('Y-m-d', $item['weekStartTime']), 'endweektime' => date('Y-m-d', $item['weekEndTime'])],
-            ['academic_year_id' => $academicYearId]
+            ['startweektime' => date('Y-m-d', $item['weekStartTime']), 'endweektime' => date('Y-m-d', $item['weekEndTime']),
+            'academic_year_id' => $academicYearId]
         );
     }
-
     public function failed(\Throwable $exception)
     {
         Log::error('Job failed for page: ' . $this->page, ['error' => $exception->getMessage()]);
