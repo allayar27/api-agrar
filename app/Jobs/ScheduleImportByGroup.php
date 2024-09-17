@@ -40,7 +40,10 @@ class ScheduleImportByGroup implements ShouldQueue
             foreach ($lessons as $item) {
                 $this->importLesson($item);
             }
+        }else{
+            Log::error('data not valid');
         }
+
     }
 
     private function fetchScheduleData()
