@@ -76,6 +76,7 @@ class ScheduleImportByGroup implements ShouldQueue
 
     private function getOrCreateAcademicYear(array $yearData): AcademicYear
     {
+        Log::info('year'.$yearData['year']);
         return AcademicYear::firstOrCreate(
             ['code' => $yearData['code'], 'year' => $yearData['name']],
             $yearData
