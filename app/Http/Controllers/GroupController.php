@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\Models\StudentScheduleDay;
 use App\Http\Requests\GroupsGetRequest;
+use App\Models\Building;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class GroupController extends Controller
@@ -57,22 +58,54 @@ class GroupController extends Controller
 
     public function getGroupById($id)
     {
-        $group = Group::query()->findOrFail($id);
+        $today = Carbon::today()->format('Y-m-d');
+        $group = Group::query()->with([
+            'students' => function ($query) use ($today) {
+                $query->with(['attendances' => function ($query) use ($today) {
+                    $query->whereDate('date', $today);
+                }]);
+            }
+        ])->withCount('students')->find($id);
+        
+        
+        $data = $group->students->map(function ($student) use ($group, $today) {
 
-        $data = [
-            'group_id' => $group->id,
-            'group_name' => $group->name,
-            'hemis_id' => $group->hemis_id,
-            'faculty_id' => $group->faculty_id,
-            'total_students' => $group->students()->count(),
-            'students' => $group->students
-        ];
+            $attendance = $student->attendances()->whereDate('date', $today)->first();
+
+            $result = [
+                'group_id' => $group->id,
+                'group_name' => $group->name,
+                'hemis_id' => $group->hemis_id,
+                'faculty_id' => $group->faculty_id,
+                'total_students' => $group->students_count,
+                'student_id' => $student->id,
+                'student_name' => $student->name,
+                'arrival_time' => null,
+                'late_time' => null,
+                'leave_time' => null
+            ];
+            
+            if ($attendance && ($attendance->device_id != 4 && $attendance->device_id != 5)) {
+                if ($attendance->type == 'in') {
+                $result['arrival_time'] = $attendance->time;
+                if ($attendance && $attendance->time > $attendance->user->time_in($today)) {
+                    $late = Carbon::parse($attendance->time)->diffInMinutes(Carbon::parse($attendance->user->time_in($today)));
+                        $result['late_time'] = Carbon::parse($late)->format('i:s');
+                }
+                }
+                elseif ($attendance->type == 'out') {
+                    $result['leave_time'] = $attendance->time;
+                } 
+            }
+            return $result;
+            
+        });
 
         return response()->json([
             'success' => true,
             'data' => $data
-        ],200);
-
+        ]);
+        
     }
 
     public function monthReport(Request $request)
@@ -88,49 +121,52 @@ class GroupController extends Controller
 
         $perPage = $request->input('per_page', 10);
 
-        $faculty = Faculty::with(['groups' => function ($query) use ($startOfMonth, $endOfMonth) {
-                $query->with([
-                    'groupeducationdays' => function ($query) use ($startOfMonth, $endOfMonth) {
+        $groups = Group::query()->with(['groupeducationdays' => function ($query) use ($startOfMonth, $endOfMonth) {
                         $query->whereBetween('day', [$startOfMonth, $endOfMonth]);
                     }
-                ])->withCount('students');
-            }
-        ])->findOrFail($request['faculty_id']);
+                ])->withCount('students')->where('faculty_id', $request['faculty_id'])->get();
         
-        $groups = $faculty->groups->map(function ($group) use ($startOfMonth, $endOfMonth) {
-            
+        $groupsData = $groups->map(function ($group) use ($startOfMonth, $endOfMonth) {
             $groupEducationDays = $group->groupeducationdays->whereBetween('day', [$startOfMonth, $endOfMonth]);
-            if ($groupEducationDays->count() > 0) {
-                $comeStudentsSum = $groupEducationDays->sum('come_students');
-                $allStudentsSum = $groupEducationDays->sum('all_students');
-                $lateStudentsSum = $groupEducationDays->sum('late_students');
-                $come_percent = $allStudentsSum > 0 ? ($comeStudentsSum / $allStudentsSum) * 100 : 0;
-                $late_percent = $allStudentsSum > 0 ? ($lateStudentsSum / $allStudentsSum) * 100 : 0;
+
+           if (count($groupEducationDays) > 0) {
+                foreach ($groupEducationDays as $groupEducationDay) {
+                     $comeStudents = $groupEducationDay->come_students;
+                     $lateStudents = $groupEducationDay->late_students;
+                     $come_percent = $group->students_count > 0 ? ($comeStudents / $group->students_count) * 100 : 0;
+                     $late_percent = $group->students_count > 0 ? ($lateStudents / $group->students_count) * 100 : 0;
+                }
+
+                return [
+                    'group_id' => $group->id,
+                    'group_name' => $group->name,
+                    'total_students' => $group->students_count,
+                    'come_students' => $comeStudents,
+                    'late_students' => $lateStudents,
+                    'come_percent' => $come_percent,
+                    'late_percent' => $late_percent,
+
+                ];
             }
             else {
-                $comeStudentsSum = 0;
-                $allStudentsSum = 0;
-                $lateStudentsSum = 0;
-                $come_percent = 0;
-                $late_percent = 0;
+                return [
+                    'group_id' => $group->id,
+                    'group_name' => $group->name,
+                    'total_students' => $group->students_count,
+                    'come_students' => 0,
+                    'late_students' => 0,
+                    'come_percent' => 0,
+                    'late_percent' => 0,
+                ];
             }
 
-            return [
-                'group_id' => $group->id,
-                'group_name' => $group->name,
-                'total_students' => $group->students_count,
-                'come_students' => $comeStudentsSum,
-                'late_students' => $lateStudentsSum,
-                'come_percent' => $come_percent,
-                'late_percent' => $late_percent,
-                
-            ];
+            
         });
 
         $currentPage = LengthAwarePaginator::resolveCurrentPage();
         $paginatedGroups = new LengthAwarePaginator(
-            $groups->forPage($currentPage, $perPage)->values(),
-            $groups->count(),
+            $groupsData->forPage($currentPage, $perPage)->values(),
+            $groupsData->count(),
             $perPage,
             $currentPage,
             ['path' => $request->url(), 'query' => $request->query()]
