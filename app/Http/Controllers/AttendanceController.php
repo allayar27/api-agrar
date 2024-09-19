@@ -183,14 +183,13 @@ class AttendanceController extends Controller
                 $q->whereIn('id', $device_ids);
             })->orderBy('date_time', 'desc')->first();
             Log::info($latest['date_time']);
+            if ($latest) {
+                return response()->json([
+                    'data' => $latest['date_time'],
+                ]);
+            }
         } else {
             $latest = $query->whereIn('device_id', $device_ids)->orderBy('date_time', 'desc')->first();
-        }
-
-        if ($latest) {
-            return response()->json([
-                'data' => $latest['date_time'],
-            ]);
         }
 
         return response()->json([
