@@ -47,15 +47,10 @@ class ImportStudentsByPage implements ShouldQueue
                         'hemis_id' => $student['department']['id'],
                         'name' => $student['department']['name'],
                     ]);
-                    $group = Group::query()->updateOrCreate(
-                        [
-                        'hemis_id' => $student['group']['id'],
-                        'faculty_id' => $faculty->id,
-                        ],
-                        [
-                            'name' => $student['level']['name'] . ' ' . $student['group']['name'],
-                        ]
-                    );
+                    $group = Group::query()->where('hemis_id', $student['group']['id'])->first();
+                    $group->update([
+                        'name' => $student['level']['name']," ". $student['group']['name'],
+                    ]);
                     Student::updateOrCreate([
                         'hemis_id' => $student['student_id_number'],
                         'name' => $student['full_name'],
