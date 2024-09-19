@@ -152,31 +152,49 @@ class AttendanceController extends Controller
     public function latest(Request $request): JsonResponse
     {
         $device_name = $request->get('device_name');
+
         $device = Device::query()->where('name', $device_name)->first();
-        if ($device) {
-            $building = Building::query()->find($device->building_id);
-            if ($building->id == 3 && $building->name == 'Korpus_3') {
-                $devices = $building->devices()->pluck('id')->toArray();
-                $latest = Attendance::query()->whereIn('device_id', $devices)->orderBy('date_time', 'Desc')->take(1)->first();
-                if ($latest) {
-                    return response()->json([
-                        'data' => $latest['date_time'],
-                    ]);
-                }
-            }else
-            {
-                $devices = $building->devices()->pluck('id')->toArray();
-                $latest = Attendance::query()->whereNotIn('device_id',$devices)->orderBy('date_time', 'desc')->take(1)->first();
-                return response()->json([
-                    'data' => $latest['date_time']
-                ]);
-            }
+
+        if (!$device) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Device not found'
+            ], 404);
         }
-       return response()->json([
-           'success' => false,
-           'message' => 'Device or Attendance  not found'
-       ],404) ;
+
+        $building = Building::query()->find($device->building_id);
+
+        if (!$building) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Building not found'
+            ], 404);
+        }
+
+        $devices = $building->devices()->pluck('id')->toArray();
+
+        $query = Attendance::query();
+
+        if ($building->id == 3 && $building->name == 'Korpus_3') {
+            $query->whereIn('device_id', $devices);
+        } else {
+            $query->whereNotIn('device_id', $devices);
+        }
+
+        $latest = $query->orderBy('date_time', 'desc')->first();
+
+        if ($latest) {
+            return response()->json([
+                'data' => $latest['date_time'],
+            ]);
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Attendance not found'
+        ], 404);
     }
+
 
     public function addNotFound(?int $hemis_id, ?string $name, ?string $PersonGroup, ?string $date_time, ?string $device_name)
     {
