@@ -196,6 +196,7 @@ class AttendanceController extends Controller
         $buildings = Building::query()->where('type', 'residential')->pluck('id')->toArray();
         $devices = Device::query()->whereIn('building_id', $buildings)->pluck('id')->toArray();
         $query = Attendance::query()
+            ->where('kind','student')
             ->whereIn('device_id', $devices)
             ->where(function($q) use ($to, $from, $today) {
                 $q->where('time', '>', $to)
@@ -205,7 +206,6 @@ class AttendanceController extends Controller
                 $q->where('time', '<', $from)
                     ->where('date', $today);
             })
-            ->where('kind', 'student')
             ->orderBy('date_time', 'desc')
             ->take(20);
         if ($request->has('group_id')) {
