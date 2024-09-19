@@ -182,7 +182,7 @@ class AttendanceController extends Controller
             $latest = $query->whereDoesntHave('device', function ($q) use ($device_ids) {
                 $q->whereIn('id', $device_ids);
             })->orderBy('date_time', 'desc')->first();
-            Log::info($latest);
+            Log::info($latest['date_time']);
         } else {
             $latest = $query->whereIn('device_id', $device_ids)->orderBy('date_time', 'desc')->first();
         }
