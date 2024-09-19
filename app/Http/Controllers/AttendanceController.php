@@ -175,7 +175,7 @@ class AttendanceController extends Controller
 
         $query = Attendance::query();
 
-        if ($building->id == 3 && $building->name == 'Korpus_3') {
+        if ($building->id === 3 && $building->name === 'Korpus_3') {
             $query->whereIn('device_id', $devices);
         } else {
             $query->whereNotIn('device_id', $devices);
