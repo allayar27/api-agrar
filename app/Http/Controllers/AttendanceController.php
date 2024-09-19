@@ -205,16 +205,16 @@ class AttendanceController extends Controller
 
     public function addNotFound(?int $hemis_id, ?string $name, ?string $PersonGroup, ?string $date_time, ?string $device_name)
     {
-        $message = "Ismi: $name\n" .
-            "Hemis ID: $hemis_id\n" .
-            "Person Group: $PersonGroup\n" .
-            "Date and Time: $date_time\n" .
-            "Device Name: $device_name";
-
-        Telegram::sendMessage([
-            'chat_id' => '906372350',
-            'text'    => $message
-        ]);
+//        $message = "Ismi: $name\n" .
+//            "Hemis ID: $hemis_id\n" .
+//            "Person Group: $PersonGroup\n" .
+//            "Date and Time: $date_time\n" .
+//            "Device Name: $device_name";
+//
+//        Telegram::sendMessage([
+//            'chat_id' => '906372350',
+//            'text'    => $message
+//        ]);
         UsersLog::query()->create([
             'hemis_id' => $hemis_id,
             'full_name' => $name,
