@@ -182,11 +182,15 @@ class AttendanceController extends Controller
 
         if ($building->id == 3 && $building->name == 'Korpus_3') {
             // Bino Korpus_3 bo'lsa, whereIn orqali qidirish
-            $query->whereIn('device_id', $device_ids);
+            $latest = $query->whereIn('device_id', $device_ids)->orderBy('date_time', 'desc')->first();
+            Log::info($latest);
         }
-
-        // So'nggi qatnashuvni olish
-        $latest = $query->orderBy('date_time', 'desc')->first();
+        else {
+            // Korpus_3 bo'lmasa, whereDoesntHave orqali qurilmalar ro'yxatini o'tkazib yuborish
+           $latest =  $query->whereDoesntHave('device', function ($q) use ($device_ids) {
+                $q->whereIn('id', $device_ids);
+            })->orderBy('date_time', 'desc')->first();
+        }
 
         if ($latest) {
             return response()->json([
