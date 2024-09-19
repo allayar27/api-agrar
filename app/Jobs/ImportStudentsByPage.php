@@ -5,14 +5,15 @@ namespace App\Jobs;
 use App\Models\Faculty;
 use App\Models\Group;
 use App\Models\Student;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Bus\Queueable;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Queue\SerializesModels;
-use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class ImportStudentsByPage implements ShouldQueue
 {
@@ -22,6 +23,7 @@ class ImportStudentsByPage implements ShouldQueue
      * Create a new job instance.
      */
     protected $page;
+
     public function __construct($page)
     {
         $this->page = $page;
@@ -35,7 +37,7 @@ class ImportStudentsByPage implements ShouldQueue
         $response = Http::withHeaders([
             'accept' => 'application/json',
             'Authorization' => 'Bearer ' . env('HEMIS_BEARER_TOKEN'),
-        ])->get(env('HEMIS_URL')."student-list?page={$this->page}&limit=200");
+        ])->get(env('HEMIS_URL') . "student-list?page={$this->page}&limit=200");
         if ($response->successful()) {
             $students = $response->json()['data']['items'];
             foreach ($students as $student) {
@@ -47,9 +49,11 @@ class ImportStudentsByPage implements ShouldQueue
                     ]);
                     $group = Group::updateOrCreate([
                         'hemis_id' => $student['group']['id'],
-                        'name' =>$student['level']['name'].' '. $student['group']['name'],
                         'faculty_id' => $faculty->id,
-                    ]);
+                    ],
+                        [
+                            'name' => $student['level']['name'] . ' ' . $student['group']['name'],
+                        ]);
 
                     Student::updateOrCreate([
                         'hemis_id' => $student['student_id_number'],
@@ -61,7 +65,7 @@ class ImportStudentsByPage implements ShouldQueue
                         'faculty_id' => $faculty->id,
                     ]);
                     DB::commit();
-                } catch (\Throwable $th) {
+                } catch (Throwable $th) {
                     DB::rollBack();
                     Log::error('Failed to import student: ' . $student['full_name'], [
                         'page' => $this->page,
@@ -77,7 +81,7 @@ class ImportStudentsByPage implements ShouldQueue
         }
     }
 
-    public function failed(\Throwable $exception)
+    public function failed(Throwable $exception)
     {
         Log::error('Job failed for page: ' . $this->page, ['error' => $exception->getMessage()]);
     }
