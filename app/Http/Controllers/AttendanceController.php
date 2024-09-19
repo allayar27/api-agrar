@@ -183,11 +183,6 @@ class AttendanceController extends Controller
         if ($building->id == 3 && $building->name == 'Korpus_3') {
             // Bino Korpus_3 bo'lsa, whereIn orqali qidirish
             $query->whereIn('device_id', $device_ids);
-        } else {
-            // Korpus_3 bo'lmasa, whereDoesntHave orqali qurilmalar ro'yxatini o'tkazib yuborish
-            $query->whereDoesntHave('device', function ($q) use ($device_ids) {
-                $q->whereIn('id', $device_ids);
-            });
         }
 
         // So'nggi qatnashuvni olish
