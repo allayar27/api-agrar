@@ -10,10 +10,7 @@ use App\Models\GroupDaily;
 use App\Helpers\ErrorAddHelper;
 use App\Models\GroupEducationdays;
 use App\Events\StudentAttendanceCreated;
-use App\Events\StudentSttendsnceCreated;
 use App\Models\FacultyEducationDays;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 

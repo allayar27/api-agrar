@@ -164,11 +164,17 @@ class AttendanceController extends Controller
                     ]);
                 }
             }
+        }else
+        {
+            $latest = Attendance::query()->orderBy('date_time', 'desc')->take(1)->first();
+            return response()->json([
+                'data' => $latest['date_time']
+            ]);
         }
-        $latest = Attendance::query()->orderBy('date_time', 'desc')->take(1)->first();
-        return response()->json([
-            'data' => $latest['date_time']
-        ]);
+       return response()->json([
+           'success' => false,
+           'message' => 'Device or Attendance  not found'
+       ],404) ;
     }
 
     public function addNotFound(?int $hemis_id, ?string $name, ?string $PersonGroup, ?string $date_time, ?string $device_name)
