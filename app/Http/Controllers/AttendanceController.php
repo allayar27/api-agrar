@@ -246,7 +246,7 @@ class AttendanceController extends Controller
                 'per_page' => $attendances->perPage(),
                 'last_page' => $attendances->lastPage(),
             ],
-            'total' => $attendances->count(),
+            'total' => $attendances->total(),
             'data' => $comers,
         ]);
     }
