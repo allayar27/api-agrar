@@ -165,7 +165,8 @@ class AttendanceController extends Controller
                 }
             }else
             {
-                $latest = Attendance::query()->orderBy('date_time', 'desc')->take(1)->first();
+                $devices = $building->devices()->pluck('id')->toArray();
+                $latest = Attendance::query()->whereNotIn('device_id',$devices)->orderBy('date_time', 'desc')->take(1)->first();
                 return response()->json([
                     'data' => $latest['date_time']
                 ]);
