@@ -41,16 +41,21 @@ class ImportStudentsByPage implements ShouldQueue
         if ($response->successful()) {
             $students = $response->json()['data']['items'];
             foreach ($students as $student) {
-//                DB::beginTransaction();
-//                try {
+                DB::beginTransaction();
+                try {
                     $faculty = Faculty::updateOrCreate([
                         'hemis_id' => $student['department']['id'],
                         'name' => $student['department']['name'],
                     ]);
-                    $group = Group::query()->where('hemis_id', $student['group']['id'])->first();
-                    $group->update([
-                        'name' => $student['level']['name']," ". $student['group']['name'],
-                    ]);
+                    $group = Group::query()->updateOrCreate(
+                        [
+                        'hemis_id' => $student['group']['id'],
+                        'faculty_id' => $faculty->id,
+                        ],
+                        [
+                            'name' => $student['level']['name'] . ' ' . $student['group']['name'],
+                        ]
+                    );
                     Student::updateOrCreate([
                         'hemis_id' => $student['student_id_number'],
                         'name' => $student['full_name'],
@@ -60,14 +65,14 @@ class ImportStudentsByPage implements ShouldQueue
                         'group_id' => $group->id,
                         'faculty_id' => $faculty->id,
                     ]);
-//                    DB::commit();
-//                } catch (Throwable $th) {
-//                    DB::rollBack();
-//                    Log::error('Failed to import student: ' . $student['full_name'], [
-//                        'page' => $this->page,
-//                        'error' => $th->getMessage()
-//                    ]);
-//                }
+                    DB::commit();
+                } catch (Throwable $th) {
+                    DB::rollBack();
+                    Log::error('Failed to import student: ' . $student['full_name'], [
+                        'page' => $this->page,
+                        'error' => $th->getMessage()
+                    ]);
+                }
             }
         } else {
             Log::error('Failed to fetch students for page: ' . $this->page, [
