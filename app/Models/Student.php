@@ -18,7 +18,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 class Student extends Model
 {
     use HasFactory;
-
+ 
     protected $fillable = [
         'hemis_id',
         'name',

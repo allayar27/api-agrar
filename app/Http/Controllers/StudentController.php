@@ -17,7 +17,6 @@ use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Facades\Artisan;
 use Maatwebsite\Excel\Facades\Excel;
 
 class StudentController extends Controller
@@ -364,7 +363,7 @@ class StudentController extends Controller
                     if (!$expectedTime) {
                         continue;
                     }
-                    $attendance = $student->attendances()->whereDate('date_time', $day)->first();
+                    $attendance = $student->attendances->whereDate('date_time', $day)->first();
 
                     if ($attendance && $attendance->time > $expectedTime) {
                         $late = Carbon::parse($attendance->time)->diffInMinutes(Carbon::parse($expectedTime));
