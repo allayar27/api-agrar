@@ -151,63 +151,63 @@ class AttendanceController extends Controller
 
     public function latest(Request $request)
     {
-        $device_name = $request->get('device_name');
+        public
+        function latest(Request $request): JsonResponse
+        {
+            // Requestdan qurilma nomini olish
+            $device_name = $request->get('device_name');
 
-        $building = Building::query()->with('devices')->where('name','Korpus_3')->first();
-        $devices = $building->devices->pluck('id')->toArray();
-        $query = Attendance::query();
-        if ($device_name = 'agrar_31') {
-            $latest = $query->whereIn('device_id', $devices)->orderBy('date_time', 'Desc')->first();
-            return response()->json([
-                'data' => $latest['date_time'],
-            ]);
-        }
-        if ($device_name = 'agrar_11'){
-            $latest = $query->whereNotIn('device_id', $devices)->orderBy('date_time', 'Desc')->first();
-            return response()->json([
-                'data' => $latest['date_time'],
-            ]);
-        }
-//        $device = Device::query()->where('name', $device_name)->first();
-//
-//        if (!$device) {
-//            return response()->json([
-//                'success' => false,
-//                'message' => 'Device not found'
-//            ], 404);
-//        }
-//
-//        $building = Building::query()->find($device->building_id);
-//
-//        if (!$building) {
-//            return response()->json([
-//                'success' => false,
-//                'message' => 'Building not found'
-//            ], 404);
-//        }
-//
-//        $devices = $building->devices()->pluck('id')->toArray();
-//
-//        $query = Attendance::query();
-//
-//        if ($building->id === 3 && $building->name === 'Korpus_3') {
-//            $query->whereIn('device_id', $devices);
-//        } else {
-//            $query->whereNotIn('device_id', $devices);
-//        }
-//
-//        $latest = $query->orderBy('date_time', 'desc')->first();
-//
-//        if ($latest) {
-//            return response()->json([
-//                'data' => $latest['date_time'],
-//            ]);
-//        }
+            // Qurilmani topish
+            $device = Device::query()->where('name', $device_name)->first();
 
-//        return response()->json([
-//            'success' => false,
-//            'message' => 'Attendance not found'
-//        ], 404);
+            if (!$device) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Device not found'
+                ], 404);
+            }
+
+            // Qurilmaning binosini topish
+            $building = Building::query()->find($device->building_id);
+
+            if (!$building) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Building not found'
+                ], 404);
+            }
+
+            // Qurilmalar ro'yxatini olish
+            $device_ids = $building->devices()->pluck('id')->toArray();
+
+            // So'nggi qatnashuvni olish
+            $query = Attendance::query();
+
+            if ($building->id == 3 && $building->name == 'Korpus_3') {
+                // Bino Korpus_3 bo'lsa, whereIn orqali qidirish
+                $query->whereIn('device_id', $device_ids);
+            } else {
+                // Korpus_3 bo'lmasa, whereDoesntHave orqali qurilmalar ro'yxatini o'tkazib yuborish
+                $query->whereDoesntHave('device', function ($q) use ($device_ids) {
+                    $q->whereIn('id', $device_ids);
+                });
+            }
+
+            // So'nggi qatnashuvni olish
+            $latest = $query->orderBy('date_time', 'desc')->first();
+
+            if ($latest) {
+                return response()->json([
+                    'data' => $latest['date_time'],
+                ]);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Attendance not found'
+            ], 404);
+        }
+
     }
 
 
@@ -230,13 +230,13 @@ class AttendanceController extends Controller
         $buildings = Building::query()->where('type', 'residential')->pluck('id')->toArray();
         $devices = Device::query()->whereIn('building_id', $buildings)->pluck('id')->toArray();
         $query = Attendance::query()
-            ->where('kind','student')
+            ->where('kind', 'student')
             ->whereIn('device_id', $devices)
-            ->where(function($q) use ($to, $from, $today) {
+            ->where(function ($q) use ($to, $from, $today) {
                 $q->where('time', '>', $to)
                     ->where('date', $today);
             })
-            ->orWhere(function($q) use ($from, $today) {
+            ->orWhere(function ($q) use ($from, $today) {
                 $q->where('time', '<', $from)
                     ->where('date', $today);
             })
@@ -275,7 +275,7 @@ class AttendanceController extends Controller
         });
         return response()->json([
             'success' => true,
-            'pagination' =>[
+            'pagination' => [
                 'current_page' => $attendances->currentPage(),
                 'per_page' => $attendances->perPage(),
                 'last_page' => $attendances->lastPage(),
