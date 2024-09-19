@@ -153,41 +153,56 @@ class AttendanceController extends Controller
     {
         $device_name = $request->get('device_name');
 
-        $device = Device::query()->where('name', $device_name)->first();
-
-        if (!$device) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Device not found'
-            ], 404);
-        }
-
-        $building = Building::query()->find($device->building_id);
-
-        if (!$building) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Building not found'
-            ], 404);
-        }
-
-        $devices = $building->devices()->pluck('id')->toArray();
-
+        $building = Building::query()->with('devices')->where('name','Korpus_3')->first();
+        $devices = $building->devices->pluck('id')->toArray();
         $query = Attendance::query();
-
-        if ($building->id === 3 && $building->name === 'Korpus_3') {
-            $query->whereIn('device_id', $devices);
-        } else {
-            $query->whereNotIn('device_id', $devices);
+        if ($device_name = 'agrar_31') {
+            $query->whereIn('device_id', $devices)->orderBy('date_time', 'Desc');
         }
-
-        $latest = $query->orderBy('date_time', 'desc')->first();
-
+        if ($device_name = 'agrar_11'){
+            $query->whereNotIn('device_id', $devices)->orderBy('date_time', 'Desc');
+        }
+        $latest = $query->first();
         if ($latest) {
             return response()->json([
                 'data' => $latest['date_time'],
             ]);
         }
+//        $device = Device::query()->where('name', $device_name)->first();
+//
+//        if (!$device) {
+//            return response()->json([
+//                'success' => false,
+//                'message' => 'Device not found'
+//            ], 404);
+//        }
+//
+//        $building = Building::query()->find($device->building_id);
+//
+//        if (!$building) {
+//            return response()->json([
+//                'success' => false,
+//                'message' => 'Building not found'
+//            ], 404);
+//        }
+//
+//        $devices = $building->devices()->pluck('id')->toArray();
+//
+//        $query = Attendance::query();
+//
+//        if ($building->id === 3 && $building->name === 'Korpus_3') {
+//            $query->whereIn('device_id', $devices);
+//        } else {
+//            $query->whereNotIn('device_id', $devices);
+//        }
+//
+//        $latest = $query->orderBy('date_time', 'desc')->first();
+//
+//        if ($latest) {
+//            return response()->json([
+//                'data' => $latest['date_time'],
+//            ]);
+//        }
 
         return response()->json([
             'success' => false,
