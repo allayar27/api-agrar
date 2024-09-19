@@ -149,7 +149,7 @@ class AttendanceController extends Controller
         ]);
     }
 
-    public function latest(Request $request): JsonResponse
+    public function latest(Request $request)
     {
         $device_name = $request->get('device_name');
 
@@ -157,17 +157,17 @@ class AttendanceController extends Controller
         $devices = $building->devices->pluck('id')->toArray();
         $query = Attendance::query();
         if ($device_name = 'agrar_31') {
-            $query->whereIn('device_id', $devices)->orderBy('date_time', 'Desc');
-        }
-        if ($device_name = 'agrar_11'){
-            $query->whereNotIn('device_id', $devices)->orderBy('date_time', 'Desc');
-        }
-        $latest = $query->first();
-//        if ($latest) {
+            $latest = $query->whereIn('device_id', $devices)->orderBy('date_time', 'Desc')->first();
             return response()->json([
                 'data' => $latest['date_time'],
             ]);
-//        }
+        }
+        if ($device_name = 'agrar_11'){
+            $latest = $query->whereNotIn('device_id', $devices)->orderBy('date_time', 'Desc')->first();
+            return response()->json([
+                'data' => $latest['date_time'],
+            ]);
+        }
 //        $device = Device::query()->where('name', $device_name)->first();
 //
 //        if (!$device) {
