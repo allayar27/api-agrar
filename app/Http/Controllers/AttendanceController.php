@@ -174,22 +174,17 @@ class AttendanceController extends Controller
             ], 404);
         }
 
-        // Qurilmalar ro'yxatini olish
         $device_ids = $building->devices()->pluck('id')->toArray();
 
-        // So'nggi qatnashuvni olish
         $query = Attendance::query();
 
-        if ($building->id == 3 && $building->name == 'Korpus_3') {
-            // Bino Korpus_3 bo'lsa, whereIn orqali qidirish
-            $latest = $query->whereIn('device_id', $device_ids)->orderBy('date_time', 'desc')->first();
-            Log::info($latest);
-        }
-        else {
-            // Korpus_3 bo'lmasa, whereDoesntHave orqali qurilmalar ro'yxatini o'tkazib yuborish
-           $latest =  $query->whereDoesntHave('device', function ($q) use ($device_ids) {
+        if ($building->id != 3 && $building->name != 'Korpus_3') {
+            $latest = $query->whereDoesntHave('device', function ($q) use ($device_ids) {
                 $q->whereIn('id', $device_ids);
             })->orderBy('date_time', 'desc')->first();
+            Log::info($latest);
+        } else {
+            $latest = $query->whereIn('device_id', $device_ids)->orderBy('date_time', 'desc')->first();
         }
 
         if ($latest) {
