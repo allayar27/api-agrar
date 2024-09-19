@@ -41,8 +41,8 @@ class ImportStudentsByPage implements ShouldQueue
         if ($response->successful()) {
             $students = $response->json()['data']['items'];
             foreach ($students as $student) {
-                DB::beginTransaction();
-                try {
+//                DB::beginTransaction();
+//                try {
                     $faculty = Faculty::updateOrCreate([
                         'hemis_id' => $student['department']['id'],
                         'name' => $student['department']['name'],
@@ -60,14 +60,14 @@ class ImportStudentsByPage implements ShouldQueue
                         'group_id' => $group->id,
                         'faculty_id' => $faculty->id,
                     ]);
-                    DB::commit();
-                } catch (Throwable $th) {
-                    DB::rollBack();
-                    Log::error('Failed to import student: ' . $student['full_name'], [
-                        'page' => $this->page,
-                        'error' => $th->getMessage()
-                    ]);
-                }
+//                    DB::commit();
+//                } catch (Throwable $th) {
+//                    DB::rollBack();
+//                    Log::error('Failed to import student: ' . $student['full_name'], [
+//                        'page' => $this->page,
+//                        'error' => $th->getMessage()
+//                    ]);
+//                }
             }
         } else {
             Log::error('Failed to fetch students for page: ' . $this->page, [
