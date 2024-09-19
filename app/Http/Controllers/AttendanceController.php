@@ -151,10 +151,8 @@ class AttendanceController extends Controller
 
     public function latest(Request $request): JsonResponse
     {
-        // Requestdan qurilma nomini olish
         $device_name = $request->get('device_name');
 
-        // Qurilmani topish
         $device = Device::query()->where('name', $device_name)->first();
 
         if (!$device) {
@@ -164,7 +162,6 @@ class AttendanceController extends Controller
             ], 404);
         }
 
-        // Qurilmaning binosini topish
         $building = Building::query()->find($device->building_id);
 
         if (!$building) {
@@ -179,10 +176,11 @@ class AttendanceController extends Controller
         $query = Attendance::query();
 
         if ($building->id != 3 && $building->name != 'Korpus_3') {
-            $latest = $query->whereDoesntHave('device', function ($q) use ($device_ids) {
-                $q->whereIn('id', $device_ids);
+            $third = Building::query()->where('name', 'Korpus_3')->first();
+            $devices = $third->devices()->pluck('id')->toArray();
+            $latest = $query->whereDoesntHave('device', function ($q) use ($devices) {
+                $q->whereIn('id', $devices);
             })->orderBy('date_time', 'desc')->first();
-            Log::info($latest['date_time']);
             if ($latest) {
                 return response()->json([
                     'data' => $latest['date_time'],
@@ -190,6 +188,11 @@ class AttendanceController extends Controller
             }
         } else {
             $latest = $query->whereIn('device_id', $device_ids)->orderBy('date_time', 'desc')->first();
+            if ($latest) {
+                return response()->json([
+                    'data' => $latest['date_time'],
+                ]);
+            }
         }
 
         return response()->json([
