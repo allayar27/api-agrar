@@ -163,11 +163,11 @@ class AttendanceController extends Controller
             $query->whereNotIn('device_id', $devices)->orderBy('date_time', 'Desc');
         }
         $latest = $query->first();
-        if ($latest) {
+//        if ($latest) {
             return response()->json([
                 'data' => $latest['date_time'],
             ]);
-        }
+//        }
 //        $device = Device::query()->where('name', $device_name)->first();
 //
 //        if (!$device) {
@@ -204,10 +204,10 @@ class AttendanceController extends Controller
 //            ]);
 //        }
 
-        return response()->json([
-            'success' => false,
-            'message' => 'Attendance not found'
-        ], 404);
+//        return response()->json([
+//            'success' => false,
+//            'message' => 'Attendance not found'
+//        ], 404);
     }
 
 
