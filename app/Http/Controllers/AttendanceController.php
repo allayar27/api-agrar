@@ -163,13 +163,13 @@ class AttendanceController extends Controller
                         'data' => $latest['date_time'],
                     ]);
                 }
+            }else
+            {
+                $latest = Attendance::query()->orderBy('date_time', 'desc')->take(1)->first();
+                return response()->json([
+                    'data' => $latest['date_time']
+                ]);
             }
-        }else
-        {
-            $latest = Attendance::query()->orderBy('date_time', 'desc')->take(1)->first();
-            return response()->json([
-                'data' => $latest['date_time']
-            ]);
         }
        return response()->json([
            'success' => false,
