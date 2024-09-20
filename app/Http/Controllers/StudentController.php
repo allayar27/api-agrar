@@ -10,6 +10,7 @@ use App\Models\Attendance;
 use App\Imports\StudentImport;
 
 use App\Models\Building;
+use App\Models\Device;
 use App\Models\Group;
 use App\Models\GroupEducationdays;
 use App\Models\Student;
@@ -213,7 +214,7 @@ class StudentController extends Controller
         $student = Student::query()
             ->with([
                 'attendances' => function ($query) {
-                    $query->orderBy('id', 'DESC')->take(1);
+                    $query->orderBy('date_time', 'DESC')->take(1);
                 },
                 'group',
                 'faculty'
@@ -221,7 +222,7 @@ class StudentController extends Controller
             ->findOrFail($id);
 
         $lastAttendance = $student->attendances->first();
-        $building = Building::query()->findOrFail($lastAttendance->device_id);
+        $device = Device::query()->with('building')->findOrFail($lastAttendance->device_id);
         return response()->json([
             'success' => true,
             'data' => [
@@ -238,7 +239,7 @@ class StudentController extends Controller
                         'time' => $lastAttendance->time,
                         'type' => $lastAttendance->type,
                         'building' => [
-                            'name' => $building->name,
+                            'name' => $device->building->name,
                         ]
                     ] : null,
                 ]

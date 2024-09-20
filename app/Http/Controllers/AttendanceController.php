@@ -109,9 +109,10 @@ class AttendanceController extends Controller
     public function lastComers(Request $request): JsonResponse
     {
         $day = $request->get('day') ?? Carbon::today();
+        $limit = $request->input('limit') ?? 20;
         $query = Attendance::with(['group', 'faculty', 'device.building'])
             ->where('date', $day)
-            ->orderBy('date_time', 'Desc')->take(20);
+            ->orderBy('date_time', 'Desc')->take($limit);
         if ($request->has('group_id')) {
             $query->where('group_id', $request->get('group_id'));
         }
