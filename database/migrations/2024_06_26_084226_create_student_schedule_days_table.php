@@ -20,7 +20,6 @@ return new class extends Migration {
             $table->foreignIdFor(Group::class);
             $table->time('time_in');
             $table->time('time_out');
-            $table->unsignedBigInteger('enter_building_id');
             $table->timestamps();
         });
     }

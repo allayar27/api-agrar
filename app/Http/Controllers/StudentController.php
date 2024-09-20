@@ -222,6 +222,11 @@ class StudentController extends Controller
             ->findOrFail($id);
 
         $lastAttendance = $student->attendances->first();
+        if(!$lastAttendance){
+            return response()->json([
+                'success' => false,
+            ],404);
+        }
         $device = Device::query()->with('building')->findOrFail($lastAttendance->device_id);
         return response()->json([
             'success' => true,

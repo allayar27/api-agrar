@@ -70,16 +70,18 @@ class ScheduleImportByGroup implements ShouldQueue
         } catch (\Exception $e) {
             DB::rollBack();
             ErrorAddHelper::logException($e);
-            Artisan::call('queue:restart');
+//            Artisan::call('queue:restart');
         }
     }
 
     private function getOrCreateAcademicYear(array $yearData): AcademicYear
     {
-        Log::info('year'.$yearData['year']);
+//        Log::info('year'.$yearData['year']);
         return AcademicYear::firstOrCreate(
-            ['code' => $yearData['code'], 'year' => $yearData['name']],
-            $yearData
+            [
+                'code' => $yearData['code'],
+                'year' => $yearData['name']
+            ]
         );
     }
 

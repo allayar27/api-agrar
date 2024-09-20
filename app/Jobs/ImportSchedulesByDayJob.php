@@ -71,7 +71,6 @@ class ImportSchedulesByDayJob implements ShouldQueue
                     'group_id' => $this->groupId,
                     'day' => Carbon::createFromTimestamp($startOfDay)->format('l'),
                     'date' => Carbon::createFromTimestamp($startOfDay)->format('Y-m-d'),
-                    'enter_building_id' => $this->getOrCreateBuilding($lessons[0]['auditorium']['name'])->id,
                 ]);
             } else {
                 Log::info('No lessons found for group ID: ' . $groupId . 'on ' . Carbon::createFromTimestamp($startOfDay)->format('Y-m-d'));
@@ -100,10 +99,5 @@ class ImportSchedulesByDayJob implements ShouldQueue
     public function failed(\Throwable $exception)
     {
         Log::error('Job failed for group ID: ' . $this->groupId, ['error' => $exception->getMessage()]);
-    }
-    private function getOrCreateBuilding(string $name): Building
-    {
-        $buildId = Auditorum::firstOrCreate(['name' => $name]);
-        return Building::find($buildId->building_id);
     }
 }

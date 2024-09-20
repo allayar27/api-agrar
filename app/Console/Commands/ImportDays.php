@@ -32,12 +32,12 @@ class ImportDays extends Command
     public function handle():void
     {
         try {
-            Artisan::call('app:daily-student-schedule');
+//            Artisan::call('app:daily-student-schedule');
             $groups = Group::all();
 //            $today = now()->format('Y-m-d');
             $today = '2024-09-16';
-            $schedules = StudentSchedule::query()->whereDate('startweektime' ,'<' , $today)
-                ->whereDate('endweektime' ,'>' , $today)->first();
+            $schedules = StudentSchedule::query()->whereDate('startweektime' ,'<=' , $today)
+                ->whereDate('endweektime' ,'>=' , $today)->first();
             if ($schedules){
                 foreach ($groups as $group) {
                     ImportSchedulesByDayJob::dispatch($group->id,$schedules->id);
