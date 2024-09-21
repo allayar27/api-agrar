@@ -91,7 +91,7 @@ class AttendanceController extends Controller
             'date_time' => $data['AccessDate'] . ' ' . $data['AccessTime'],
             'kind' => $kind,
             'device_id' => $device->id,
-        ];
+        ]; 
 
         if ($kind === 'student' && $entity->group && $entity->group->faculty) {
             $attendanceData['group_id'] = $entity->group->id;

@@ -10,7 +10,9 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\Models\StudentScheduleDay;
 use App\Http\Requests\GroupsGetRequest;
+use App\Models\Attendance;
 use App\Models\Building;
+use App\Models\Device;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class GroupController extends Controller
@@ -58,15 +60,14 @@ class GroupController extends Controller
 
     public function getGroupById($id)
     {
-        $today = Carbon::today()->format('Y-m-d');
+        $today = request()->input('day', Carbon::today()->format('Y-m-d'));
         $group = Group::query()->with([
             'students' => function ($query) use ($today) {
                 $query->with(['attendances' => function ($query) use ($today) {
                     $query->whereDate('date', $today);
                 }]);
             }
-        ])->withCount('students')->find($id);
-        
+        ])->withCount('students')->findOrFail($id);
         
         $data = $group->students->map(function ($student) use ($group, $today) {
 
@@ -82,20 +83,20 @@ class GroupController extends Controller
                 'student_name' => $student->name,
                 'arrival_time' => null,
                 'late_time' => null,
-                'leave_time' => null
+                'device_id' => null
             ];
             
-            if ($attendance && ($attendance->device_id != 4 && $attendance->device_id != 5)) {
-                if ($attendance->type == 'in') {
-                $result['arrival_time'] = $attendance->time;
-                if ($attendance && $attendance->time > $attendance->user->time_in($today)) {
-                    $late = Carbon::parse($attendance->time)->diffInMinutes(Carbon::parse($attendance->user->time_in($today)));
-                        $result['late_time'] = Carbon::parse($late)->format('i:s');
+            if ($attendance) {
+                if ($attendance->device_id != 4 && $attendance->device_id != 5) {
+                    if ($attendance->type == 'in') {
+                        $result['arrival_time'] = $attendance->time;
+                            if ($attendance && $attendance->time > $attendance->user->time_in($today)) {
+                                $late = Carbon::parse($attendance->time)->diffInMinutes(Carbon::parse($attendance->user->time_in($today)));
+                                    $result['late_time'] = Carbon::parse($late)->format('i:s');
+                            }
+                        }
                 }
-                }
-                elseif ($attendance->type == 'out') {
-                    $result['leave_time'] = $attendance->time;
-                } 
+                $result['leave_time'] = $attendance->time;
             }
             return $result;
             
@@ -123,47 +124,78 @@ class GroupController extends Controller
 
         $groups = Group::query()->with(['groupeducationdays' => function ($query) use ($startOfMonth, $endOfMonth) {
                         $query->whereBetween('day', [$startOfMonth, $endOfMonth]);
+                    },
+                    'attendances' => function ($query) use ($startOfMonth, $endOfMonth) {
+                        $query->whereBetween('date', [$startOfMonth, $endOfMonth]);
                     }
-                ])->withCount('students')->where('faculty_id', $request['faculty_id'])->get();
-        
+        ])->withCount('students')->where('faculty_id', $request['faculty_id'])->get();
+
         $groupsData = $groups->map(function ($group) use ($startOfMonth, $endOfMonth) {
             $groupEducationDays = $group->groupeducationdays->whereBetween('day', [$startOfMonth, $endOfMonth]);
+            $studentIds = $group->students()->pluck('id');
+            
+            $attendances = $group->attendances->whereBetween('date', [$startOfMonth, $endOfMonth])
+                ->where('kind', 'student')
+                ->where('type', 'in')
+                ->groupBy('date');
 
-           if (count($groupEducationDays) > 0) {
+            //return $attendances;
+            $totalStudents = $group->students_count;
+            $study_days = 0;
+            $late_comers_count = 0;
+            $total_comes_count = null;
+            $studentAttendancePerDay = [];
+        foreach ($attendances as $date => $dailyAttendances) {
+            // Убираем дубликаты студентов за день
+            $uniqueAttendances = $dailyAttendances->whereIn('attendanceable_id', $studentIds)
+                ->unique('attendanceable_id');
+
+            // Если пришло более 20% студентов, считаем день учебным
+            if ($uniqueAttendances->count() > 0.2 * $totalStudents) {
+                $study_days++;
+                $late_comers = 0;
+                $total_comes_count += $uniqueAttendances->count();
+                // $count_comers = $uniqueAttendances->count();
                 foreach ($groupEducationDays as $groupEducationDay) {
-                     $comeStudents = $groupEducationDay->come_students;
-                     $lateStudents = $groupEducationDay->late_students;
-                     $come_percent = $group->students_count > 0 ? ($comeStudents / $group->students_count) * 100 : 0;
-                     $late_percent = $group->students_count > 0 ? ($lateStudents / $group->students_count) * 100 : 0;
+                    if ($groupEducationDay->day == $date) {
+                        $late_comers = $groupEducationDay->late_students;
+                        $late_comers_count += $late_comers; 
+                        break;
+                    }
                 }
-
-                return [
-                    'group_id' => $group->id,
-                    'group_name' => $group->name,
-                    'total_students' => $group->students_count,
-                    'come_students' => $comeStudents,
-                    'late_students' => $lateStudents,
-                    'come_percent' => $come_percent,
-                    'late_percent' => $late_percent,
-
-                ];
+                
+                // $studentAttendancePerDay[] = [
+                //     'date' => $date,
+                //     'student_count' => $uniqueAttendances->count(),
+                //     'late_comers' => $late_comers,
+                //     'late_percent' => ($late_comers / $uniqueAttendances->count()) * 100
+                // ];
             }
-            else {
-                return [
-                    'group_id' => $group->id,
-                    'group_name' => $group->name,
-                    'total_students' => $group->students_count,
-                    'come_students' => 0,
-                    'late_students' => 0,
-                    'come_percent' => 0,
-                    'late_percent' => 0,
-                ];
-            }
+
+             //else {
+            //     return $study_days;
+            //     // $studentAttendancePerDay[$date] = [
+            //     //     'date' => $date,
+            //     //     'student_count' => $uniqueAttendances->count(),
+            //     //     'is_study_day' => false,
+            //     // ];
+            // }
+        }
 
             
-        });
+            return [
+                'group_id' => $group->id,
+                'group_name' => $group->name,
+                'total_students' => $group->students_count,
+                'total_study_days' => $study_days,
+                'late_percent' => $late_comers_count > 0 ? ($late_comers_count / $total_comes_count) * 100 : 0,
+                'come_percent' => $study_days ? ($total_comes_count / ($study_days * $group->students_count)) * 100 : 0,
+                //'report' => $studentAttendancePerDay,
+            ];
+    });
 
-        $currentPage = LengthAwarePaginator::resolveCurrentPage();
+    //return response()->json($groupsData);
+     $currentPage = LengthAwarePaginator::resolveCurrentPage();
         $paginatedGroups = new LengthAwarePaginator(
             $groupsData->forPage($currentPage, $perPage)->values(),
             $groupsData->count(),

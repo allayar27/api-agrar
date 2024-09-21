@@ -84,7 +84,7 @@ class RecordStudentStatistics
                 FacultyEducationDays::updateOrCreate(
                     [
                         'faculty_id' => $facultyId,
-                        'day' => $today,
+                        'day' => $today, 
                     ],
                     [
                         'all_students' => Student::where('faculty_id', $facultyId)->count(),

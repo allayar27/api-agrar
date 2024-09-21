@@ -104,16 +104,16 @@ class StudentController extends Controller
             $presentStudents = $educationDay->come_students ?? 0;
 
             $lateComers = [];
-            $time_in = "08:30:00";
+            // $time_in = "08:30:00";
             foreach ($group->students as $student) {
                 $attendance = $student->attendances->first();
-                if ($attendance && $attendance->time > $time_in) {
+                if ($attendance && $attendance->time > $attendance->user->time_in($day)) {
                     $late = Carbon::parse($attendance->time)->diffInMinutes(Carbon::parse($attendance->user->time_in($day)));
                     $lateComers[] = [
                         'id' => $student->id,
                         'name' => $student->name,
                         'time' => $attendance->time,
-                        'late' => Carbon::parse($late)->format('i:s')
+                        'late' => Carbon::parse($late)->format('H:i:s')
                     ];
                 }
             }
@@ -365,14 +365,14 @@ class StudentController extends Controller
             for ($date = $startOfMonth; $date->lte($endOfMonth); $date->addDay()) {
                 $day = $date->format('Y-m-d');
                 foreach ($group->students as $student) {
-                    $expectedTime = $student->time_in($day);
+                    $expectedTime = '08:30:00';//$student->time_in($day);
                     if (!$expectedTime) {
                         continue;
                     }
-                    $attendance = $student->attendances->whereDate('date_time', $day)->first();
+                    $attendance = $student->attendances->where('date', $day)->first();
 
                     if ($attendance && $attendance->time > $expectedTime) {
-                        $late = Carbon::parse($attendance->time)->diffInMinutes(Carbon::parse($expectedTime));
+                        $late = Carbon::parse($attendance->time)->diffInMinutes($expectedTime);
 
                         // добавляем в массив студенты которые опоздали
                         $lateComers[] = [
@@ -381,7 +381,7 @@ class StudentController extends Controller
                             'date' => $date->toDateString(),
                             'expected_time_in' => $expectedTime,
                             'actual_time_in' => $attendance->time,
-                            'late' => $late . ' minutes',
+                            'late' => Carbon::parse($late)->format('i:s'),
                         ];
                     }
                 }
