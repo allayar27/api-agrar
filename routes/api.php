@@ -51,6 +51,7 @@ Route::get('student/monthly/late_comers', [StudentController::class, 'mothlyLate
 Route::get('late_teachers',[TeacherController::class, 'allTeachers']);
 Route::get('teachers/days',[TeacherController::class, 'getMonthlyStatistics']);
 Route::get('employees/days',[TeacherController::class, 'getEmployeesMonthly']);
+Route::get('teachers/all', [TeacherController::class, 'getAllTeachers']);
 
 Route::get('lastComers',[AttendanceController::class,'lastComers']);
 Route::get('residential',[AttendanceController::class,'residential']);

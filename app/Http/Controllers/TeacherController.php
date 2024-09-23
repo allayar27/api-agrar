@@ -123,4 +123,14 @@ class TeacherController extends Controller
             'daily_statistics' => $dailyStatistics,
         ]);
     }
+
+    public function getAllTeachers()
+    {
+        $kind = request()->input('kind') ?? 'teacher';
+        $employees = Teacher::query()->where('kind', $kind)->get();
+        return response()->json([
+            'count' => $employees->count(),
+            'data' => $employees
+        ]);
+    }
 }
