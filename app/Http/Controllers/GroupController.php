@@ -60,43 +60,41 @@ class GroupController extends Controller
 
     public function getGroupById($id)
     {
-        $today = request()->input('day', Carbon::today()->format('Y-m-d'));
-        $group = Group::query()->with([
-            'students' => function ($query) use ($today) {
-                $query->with(['attendances' => function ($query) use ($today) {
-                    $query->whereDate('date', $today);
-                }]);
-            }
-        ])->withCount('students')->findOrFail($id);
+        $today = request()->input('day') ?? Carbon::today()->format('Y-m-d');
+        $group = Group::query()->with(['attendances'])->withCount('students')->findOrFail($id);
         
         $data = $group->students->map(function ($student) use ($group, $today) {
 
-            $attendance = $student->attendances()->whereDate('date', $today)->first();
-
+            $attendance = $student->attendances()
+                        ->whereDate('date', $today)
+                        ->where('kind', 'student')
+                        ->whereNotIn('device_id', [21, 22, 23, 24])
+                        ->first();
             $result = [
                 'group_id' => $group->id,
                 'group_name' => $group->name,
-                'hemis_id' => $group->hemis_id,
-                'faculty_id' => $group->faculty_id,
                 'total_students' => $group->students_count,
                 'student_id' => $student->id,
                 'student_name' => $student->name,
                 'arrival_time' => null,
+                'leave_time' => null,
                 'late_time' => null,
-                'device_id' => null
             ];
             
             if ($attendance) {
-                if ($attendance->device_id != 4 && $attendance->device_id != 5) {
                     if ($attendance->type == 'in') {
                         $result['arrival_time'] = $attendance->time;
                             if ($attendance && $attendance->time > $attendance->user->time_in($today)) {
                                 $late = Carbon::parse($attendance->time)->diffInMinutes(Carbon::parse($attendance->user->time_in($today)));
-                                    $result['late_time'] = Carbon::parse($late)->format('i:s');
+                                    //$result['late_time'] = Carbon::parse($late)->format('H:i:s');
+                                $hours = intdiv($late, 60);
+                                $minutes = $late % 60;
+                                $result['late_time'] = sprintf('%02d:%02d:00', $hours, $minutes);
                             }
                         }
-                }
-                $result['leave_time'] = $attendance->time;
+                        elseif ($attendance->type == 'out') {
+                            $result['leave_time'] = $attendance->time;
+                        }        
             }
             return $result;
             

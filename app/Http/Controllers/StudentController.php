@@ -364,24 +364,18 @@ class StudentController extends Controller
 
             for ($date = $startOfMonth; $date->lte($endOfMonth); $date->addDay()) {
                 $day = $date->format('Y-m-d');
-                foreach ($group->students as $student) {
-                    $expectedTime = '08:30:00';//$student->time_in($day);
-                    if (!$expectedTime) {
-                        continue;
-                    }
+                foreach ($group->students as $student) {    
                     $attendance = $student->attendances->where('date', $day)->first();
 
-                    if ($attendance && $attendance->time > $expectedTime) {
-                        $late = Carbon::parse($attendance->time)->diffInMinutes($expectedTime);
+                    if ($attendance && $attendance->time > $attendance->user->time_in($day)) {
+                        $late = Carbon::parse($attendance->time)->diffInMinutes(Carbon::parse($attendance->user->time_in($day)));
 
-                        // добавляем в массив студенты которые опоздали
                         $lateComers[] = [
                             'student_id' => $student->id,
                             'student_name' => $student->name,
                             'date' => $date->toDateString(),
-                            'expected_time_in' => $expectedTime,
                             'actual_time_in' => $attendance->time,
-                            'late' => Carbon::parse($late)->format('i:s'),
+                            'late' => Carbon::parse($late)->format('H:i:s'),
                         ];
                     }
                 }

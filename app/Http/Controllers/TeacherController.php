@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\EducationDays;
 use App\Models\Teacher;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -34,7 +35,7 @@ class TeacherController extends Controller
                 'id' => $teacher->id,
                 'name' => $teacher->name,
                 'time' => $attendance->time,
-                'late' => Carbon::parse($attendance->time)->diffInMinutes($time_in)
+                'late' => Carbon::parse($attendance->time)->diffInMinutes($time_in) . 'min'
             ];
         });
         $currentPage = LengthAwarePaginator::resolveCurrentPage();
@@ -124,13 +125,94 @@ class TeacherController extends Controller
         ]);
     }
 
-    public function getAllTeachers()
+    public function getAllTeachers(Request $request)
     {
-        $kind = request()->input('kind') ?? 'teacher';
-        $employees = Teacher::query()->where('kind', $kind)->get();
+        $day = $request->input('day') ?? Carbon::today()->format('Y-m-d');
+        $employees = Teacher::query()->with('attendances')->where('kind', 'teacher')->get();
+        $employees_count = $employees->count();
+        
+        $educationDay = EducationDays::query()
+                                    ->where('date', $day)
+                                    ->where('type', 'work_day')->first();
+
+        $late_comers = $educationDay->late_teachers ?? null;
+        $comers  = $educationDay->come_teachers ?? null;
+        $come_percent =  $comers ? ($comers/$employees_count) * 100 : 0;
+        $late_percent = $comers ? ($late_comers/$comers) * 100 : 0;
+            
         return response()->json([
-            'count' => $employees->count(),
-            'data' => $employees
+                'total_employees' => $employees_count,
+                'total_comers' => $comers,
+                'late_comers' => $late_comers,
+                'late_percent' => $late_percent,
+                'come_percent' => $come_percent
+            ]);
+    }
+
+    public function dayliReport(Request $request): JsonResponse
+    {
+        $day = $request->input('day') ?? Carbon::today()->format('Y-m-d');
+        $perPage = request('per_page', 20);
+
+        $teachers = Teacher::query()->with('attendances')->where('kind', 'teacher')->get();
+
+        $data = $teachers->map(function ($teacher) use ($day) {
+            $attendance = $teacher->attendances->where('date', $day)
+                ->where('kind', 'teacher')
+                ->whereNotIn('device_id', [21, 22, 23, 24])
+                ->first();
+
+            $result = [
+                'id' => $teacher->id,
+                'name' => $teacher->name,
+                'arrival_time' => null,
+                'leave_time' => null,
+                'late_time' => null,
+            ];
+            
+            if ($attendance) {
+                if ($attendance->type == 'in') {
+                    $time_in = Carbon::parse('9:00');
+                    $result['arrival_time'] = $attendance->time;
+
+                    if (Carbon::parse($attendance->time) > $time_in) {
+                        $late = Carbon::parse($attendance->time)->diffInMinutes($time_in);
+                        $hours = intdiv($late, 60);
+                        $minutes = $late % 60;
+                        $result['late_time'] = sprintf('%02d:%02d:00', $hours, $minutes);
+                    }
+
+                } elseif ($attendance->type == 'out') {
+                    $result['leave_time'] = $attendance->time;
+                }
+            }
+            return $result;
+        });
+        $currentPage = LengthAwarePaginator::resolveCurrentPage();
+        $paginatedLateComers = new LengthAwarePaginator(
+            $data->forPage($currentPage, $perPage)->values(),
+            $data->count(),
+            $perPage,
+            $currentPage,
+            ['path' => request()->url(), 'query' => request()->query()]
+        );
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'items' => $paginatedLateComers->items(),
+                'pagination' => [
+                    'total' => $paginatedLateComers->total(),
+                    'current_page' => $paginatedLateComers->currentPage(),
+                    'last_page' => $paginatedLateComers->lastPage(),
+                    'per_page' => $paginatedLateComers->perPage(),
+                    'total_pages' => $paginatedLateComers->lastPage(),
+                ],
+            ],
         ]);
     }
+
+    
+
+
 }
