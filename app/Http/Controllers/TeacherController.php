@@ -295,87 +295,140 @@ class TeacherController extends Controller
         ]);
     }
 
-    // public function monthReport(Request $request) {
-    //     // $valid = $request->validate([
-    //     //     'kind' => 'required|exists:teachers,kind',
-    //     // ]);
+    public function monthReport(Request $request) {
+        // $valid = $request->validate([
+        //     'kind' => 'required|exists:teachers,kind',
+        // ]);
 
-    //     $month = $request->input('month') ?? Carbon::now()->format('Y-m');
-    //     $startOfMonth = Carbon::createFromFormat('Y-m', $month)->startOfMonth()->toDateString();
-    //     $endOfMonth = Carbon::createFromFormat('Y-m', $month)->endOfMonth()->toDateString();
-    //     $perPage = $request->input('per_page', 10);
+        $month = $request->input('month') ?? Carbon::now()->format('Y-m');
+        $startOfMonth = Carbon::createFromFormat('Y-m', $month)->startOfMonth()->toDateString();
+        $endOfMonth = Carbon::createFromFormat('Y-m', $month)->endOfMonth()->toDateString();
+        $perPage = $request->input('per_page', 10);
 
-    //     $teachers = Teacher::query()->with('attendances')->where('kind', 'teacher')->get();
-    //     $employee_count = $teachers->count();
-    //     $employeeIds = $teachers->pluck('id');
-    //     $data = $teachers->map(function ($teacher) use ($startOfMonth, $endOfMonth, $employee_count, $employeeIds) {
+        $teachers = Teacher::query()->with('attendances')->where('kind', 'teacher')->get();
+        $employees = Teacher::query()->with('attendances')->where('kind', 'employee')->get();
 
-    //         // if ($valid['kind'] == 'teacher') {
-    //             $educationDays = EducationDays::query()
-    //                 ->whereBetween('date', [$startOfMonth, $endOfMonth])
-    //                 ->where('type', 'work_day')->get();
+        $educationDays = EducationDays::query()
+                    ->whereBetween('date', [$startOfMonth, $endOfMonth])
+                    ->where('type', 'work_day')->get();
+        
+        $employeeEducationDays = EmployeeEducationDays::query()
+                    ->whereBetween('date', [$startOfMonth, $endOfMonth])
+                    ->where('type', 'work_day')->get();
 
-    //         $attendances = $teacher->attendances->whereBetween('date', [$startOfMonth, $endOfMonth])
-    //             ->where('kind', 'teacher')
-    //             ->where('type', 'in')
-    //             ->whereNotIn('device_id', [21, 22, 23, 24])
-    //             ->groupBy('date');
+        $study_teachers_days = 0;
+        $late_teachers_comers_count = 0;
+        $total_teachers_comers_count = 0;
+        foreach ($educationDays as $educationDay) {
+            if ($educationDay->come_teachers > 0.2 * $teachers->count()) {
+                $study_teachers_days++;
+                $total_teachers_comers_count += $educationDay->come_teachers;
+                $late_teachers_comers_count += $educationDay->late_teachers;
+                //             $late_comers = 0;
+            }
+        }
 
-    //         $attendances = $attendances->filter(function ($attendance) {
-    //             return $attendance->isNotEmpty();
-    //         });
+        $study_employee_days = 0;
+        $late_employee_comers_count = 0;
+        $total_employee_comers_count = 0;
+        foreach ($employeeEducationDays as $educationDay) {
+            if ($educationDay->come_teachers > 0.2 * $employees->count()) {
+                $study_employee_days++;
+                $total_employee_comers_count += $educationDay->come_teachers;
+                $late_employee_comers_count += $educationDay->late_teachers;
+            }
+        }
 
-    //         if ($attendances->isEmpty()) {
-    //             return null;
-    //         }
-           
+        $teachersData = [
+            'total_teachers' => $teachers->count(),
+            'total_study_days' => $study_teachers_days,
+            'late' => $late_teachers_comers_count,
+            'comers' => $total_teachers_comers_count,
+            'late_percent' => $late_teachers_comers_count > 0 ? ($late_teachers_comers_count / $total_teachers_comers_count) * 100 : 0,
+            'come_percent' => $study_teachers_days ? ($total_teachers_comers_count / ($study_teachers_days * $teachers->count())) * 100 : 0,
+        ];
 
-    //         $totalTeachers = $employee_count;
-    //         $study_days = 0;
-    //         $late_comers_count = 0;
-    //         $total_comes_count = 0;
-    //         $studentAttendancePerDay = [];
+        $employeesData = [
+            'total_employees' => $employees->count(),
+            'total_study_days' => $study_employee_days,
+            'late' => $late_employee_comers_count,
+            'comers' => $total_employee_comers_count,
+            'late_percent' => $late_employee_comers_count > 0 ? ($late_employee_comers_count / $total_employee_comers_count) * 100 : 0,
+            'come_percent' => $study_employee_days ? ($total_employee_comers_count / ($study_employee_days * $employees->count())) * 100 : 0,
+        ];
+
+        return response()->json([
+            'teachers' => $teachersData,
+            'employees' => $employeesData
+        ]);
+        // $data = $teachers->map(function ($teacher) use ($startOfMonth, $endOfMonth, $employee_count, $employeeIds, $educationDays) {
+
+        //     // if ($valid['kind'] == 'teacher') {
+                
+
+        //     $attendances = $teacher->attendances->whereBetween('date', [$startOfMonth, $endOfMonth])
+        //         ->where('kind', 'teacher')
+        //         ->where('type', 'in')
+        //         ->whereNotIn('device_id', [21, 22, 23, 24])
+        //         ->groupBy('date');
+
+        //     $attendances = $attendances->filter(function ($attendance) {
+        //         return $attendance->isNotEmpty();
+        //     });
+
+        //     if ($attendances->isEmpty()) {
+        //         return null;
+        //     }
+
+        //     $totalTeachers = $employee_count;
+        //     $study_days = 0;
+        //     $late_comers_count = 0;
+        //     $total_comes_count = 0;
+        //     $totalUniqueAttendancesCount = 0;
             
-    //         foreach ($attendances as $date => $dailyAttendances) {
-    //             //return $dailyAttendances;
-    //             $uniqueAttendances = $dailyAttendances->whereIn('attendanceable_id', $employeeIds)
-    //                 ->where('kind', 'teacher')
-    //                 ->flatten();
-    //                 //->unique('attendanceable_id');
+        //     foreach ($attendances as $date => $dailyAttendances) {
+        //         $uniqueAttendances = $dailyAttendances->whereIn('attendanceable_id', $employeeIds)
+        //             ->unique('attendanceable_id');
 
-    //             $totalUniqueAttendances = $uniqueAttendances->unique('attendanceable_id');
-    //             $count = $totalUniqueAttendances->count();
-    //             return $count;
 
-    //             if ($uniqueAttendances->count() > 0.1 * $totalTeachers) {
-    //                 $study_days++;
-    //                 $late_comers = 0;
-    //                 $total_comes_count += $uniqueAttendances->count();
-    //                 // $count_comers = $uniqueAttendances->count();
-    //                 foreach ($educationDays as $educationDay) {
+        //         // foreach ($uniqueAttendances as $uniqueAttendance) {
+        //         //     $getUniqueAttendance = $uniqueAttendance;
+        //         // }
+        //         $totalUniqueAttendances = $uniqueAttendances->count();
+        //         //$count_attendance = count($getUniqueAttendance);
+        //         //$totalUniqueAttendancesCount += $totalUniqueAttendances;
+                
+        //         if ($totalUniqueAttendances > 0.1 * $totalTeachers) {
+        //             $study_days++;
+        //             $late_comers = 0;
+        //             $total_comes_count += $uniqueAttendances->count();
+        //             //$count_comers = $uniqueAttendances->count();
+        //             foreach ($educationDays as $educationDay) {
     
-    //                     if ($educationDay->date == $date) {
-    //                         $late_comers = $educationDay->late_teachers;
-    //                         $late_comers_count += $late_comers;
-    //                         break;
-    //                     }
-    //                 }
+        //                 if ($educationDay->date == $date) {
+        //                     $late_comers = $educationDay->late_teachers;
+        //                     $late_comers_count += $late_comers;
+        //                     break;
+        //                 }
+        //             }
 
-    //             }
-    //         }
-            
-    //         //return $study_days;
-    //         return [
-    //             'total_teachers' => $totalTeachers,
-    //             'total_study_days' => $study_days,
-    //             'late_percent' => $late_comers_count > 0 ? ($late_comers_count / $total_comes_count) * 100 : 0,
-    //             'come_percent' => $study_days ? ($total_comes_count / ($study_days * $totalTeachers)) * 100 : 0,
-    //         ];
-    //     });
+        //         }
+        //     }
+        //     return $total_comes_count;
+        //     //return $study_days;
+        //     return [
+        //         'total_teachers' => $totalTeachers,
+        //         'total_study_days' => $study_days,
+        //         'late' => $late_comers_count,
+        //         'comers' => $total_comes_count,
+        //         'late_percent' => $late_comers_count > 0 ? ($late_comers_count / $total_comes_count) * 100 : 0,
+        //         'come_percent' => $study_days ? ($total_comes_count / ($study_days * $totalTeachers)) * 100 : 0,
+        //     ];
+        // });
 
-    //     return $data->filter()->values();
+        //return $data->filter()->values();
 
-    // }
+    }
 
     
 

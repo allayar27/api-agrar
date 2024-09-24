@@ -141,7 +141,7 @@ class GroupController extends Controller
             $study_days = 0;
             $late_comers_count = 0;
             $total_comes_count = null;
-            $studentAttendancePerDay = [];
+
         foreach ($attendances as $date => $dailyAttendances) {
 
             $uniqueAttendances = $dailyAttendances->whereIn('attendanceable_id', $studentIds)
@@ -151,7 +151,7 @@ class GroupController extends Controller
                 $study_days++;
                 $late_comers = 0;
                 $total_comes_count += $uniqueAttendances->count();
-                // $count_comers = $uniqueAttendances->count();
+
                 foreach ($groupEducationDays as $groupEducationDay) {
                     if ($groupEducationDay->day == $date) {
                         $late_comers = $groupEducationDay->late_students;
@@ -171,7 +171,6 @@ class GroupController extends Controller
                 'total_study_days' => $study_days,
                 'late_percent' => $late_comers_count > 0 ? ($late_comers_count / $total_comes_count) * 100 : 0,
                 'come_percent' => $study_days ? ($total_comes_count / ($study_days * $group->students_count)) * 100 : 0,
-                //'report' => $studentAttendancePerDay,
             ];
     });
  
