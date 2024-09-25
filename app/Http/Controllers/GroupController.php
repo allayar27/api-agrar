@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\GroupmonthReport;
+use App\Exports\GroupmonthReportExport;
 use Carbon\Carbon;
 use App\Models\Group;
 use App\Models\Faculty;
@@ -14,6 +16,7 @@ use App\Models\Attendance;
 use App\Models\Building;
 use App\Models\Device;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Maatwebsite\Excel\Facades\Excel;
 
 class GroupController extends Controller
 {
@@ -65,11 +68,10 @@ class GroupController extends Controller
         
         $data = $group->students->map(function ($student) use ($group, $today) {
 
-            $attendance = $student->attendances()
+            $attendances = $student->attendances()
                         ->whereDate('date', $today)
                         ->where('kind', 'student')
-                        ->whereNotIn('device_id', [21, 22, 23, 24])
-                        ->first();
+                        ->whereNotIn('device_id', [21, 22, 23, 24]);
             $result = [
                 'group_id' => $group->id,
                 'group_name' => $group->name,
@@ -80,24 +82,25 @@ class GroupController extends Controller
                 'leave_time' => null,
                 'late_time' => null,
             ];
-            
-            if ($attendance) {
-                    if ($attendance->type == 'in') {
-                        $result['arrival_time'] = $attendance->time;
-                            if ($attendance && $attendance->time > $attendance->user->time_in($today)) {
-                                $late = Carbon::parse($attendance->time)->diffInMinutes(Carbon::parse($attendance->user->time_in($today)));
-                                    //$result['late_time'] = Carbon::parse($late)->format('H:i:s');
-                                $hours = intdiv($late, 60);
-                                $minutes = $late % 60;
-                                $result['late_time'] = sprintf('%02d:%02d:00', $hours, $minutes);
-                            }
-                        }
-                        elseif ($attendance->type == 'out') {
-                            $result['leave_time'] = $attendance->time;
-                        }        
+            $attendance = $attendances->first();
+            $time_in = $attendance->user->time_in($today);
+            $arrival = $attendances->firstWhere('type', 'in');
+            $leave = $attendances->firstWhere('type', 'out');
+
+
+            if ($arrival) {
+                $result['arrival_time'] = $arrival->time;
+                if ($arrival->time > $time_in) {
+                    $late = Carbon::parse($arrival->time)->diffInMinutes(Carbon::parse($time_in));
+                    $hours = intdiv($late, 60);
+                    $minutes = $late % 60;
+                    $result['late_time'] = sprintf('%02d:%02d:00', $hours, $minutes);
+                }
+            } 
+            if ($leave) {
+                $result['leave_time'] = $leave->time;
             }
             return $result;
-            
         });
 
         return response()->json([
@@ -109,8 +112,7 @@ class GroupController extends Controller
 
     public function monthReport(Request $request)
     {
-        $request->validate([
-            'month' => 'required|date_format:Y-m',
+        $valid = $request->validate([
             'faculty_id' => 'required|exists:faculties,id',
         ]);
 
@@ -126,7 +128,7 @@ class GroupController extends Controller
                     'attendances' => function ($query) use ($startOfMonth, $endOfMonth) {
                         $query->whereBetween('date', [$startOfMonth, $endOfMonth]);
                     }
-        ])->withCount('students')->where('faculty_id', $request['faculty_id'])->get();
+        ])->withCount('students')->where('faculty_id', $valid['faculty_id'])->get();
 
         $groupsData = $groups->map(function ($group) use ($startOfMonth, $endOfMonth) {
             $groupEducationDays = $group->groupeducationdays->whereBetween('day', [$startOfMonth, $endOfMonth]);
@@ -163,15 +165,14 @@ class GroupController extends Controller
             }
         }
 
-            
-            return [
-                'group_id' => $group->id,
-                'group_name' => $group->name,
-                'total_students' => $group->students_count,
-                'total_study_days' => $study_days,
-                'late_percent' => $late_comers_count > 0 ? ($late_comers_count / $total_comes_count) * 100 : 0,
-                'come_percent' => $study_days ? ($total_comes_count / ($study_days * $group->students_count)) * 100 : 0,
-            ];
+        return [
+            'group_id' => $group->id,
+            'group_name' => $group->name,
+            'total_students' => $group->students_count,
+            'total_study_days' => $study_days,
+            'late_percent' => $late_comers_count > 0 ? ($late_comers_count / $total_comes_count) * 100 : 0,
+            'come_percent' => $study_days ? ($total_comes_count / ($study_days * $group->students_count)) * 100 : 0,
+        ];
     });
  
      $currentPage = LengthAwarePaginator::resolveCurrentPage();
@@ -272,7 +273,7 @@ class GroupController extends Controller
 
         $startOfMonth = Carbon::createFromFormat('Y-m', $request['month'])->startOfMonth()->toDateString();
         $endOfMonth = Carbon::createFromFormat('Y-m', $request['month'])->endOfMonth()->toDateString();
-
+        
         $groups = Group::query()
             ->with(['groupeducationdays', 'attendances', 'students'])
             ->withCount('students')
@@ -319,13 +320,10 @@ class GroupController extends Controller
                         if ($attendance) {
                             $studentReports[$studentId]['attended_count']++;
     
-                            if ($attendance->time > $attendance->user->time_in($date)) {
-                                //$late_minutes = Carbon::parse($attendance->time)->diffInMinutes(Carbon::parse($attendance->user->time_in($date)));
-                 
+                            if ($attendance->time > $attendance->user->time_in($date)) {                 
                                 $studentReports[$studentId]['late_days'][] = [
                                     'date' => $date,
                                     'late_time' => $attendance->time,
-                                    //'late_formatted' => Carbon::parse($late_minutes)->format('i:s'),
                                 ];
                             }
                         }

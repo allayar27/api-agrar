@@ -54,6 +54,8 @@ Route::get('employees/days',[TeacherController::class, 'getEmployeesMonthly']);
 Route::get('teachers/all', [TeacherController::class, 'getAllTeachers']);
 Route::get('teachers/daily', [TeacherController::class, 'dayliReport']);
 Route::get('teachers/monthly', [TeacherController::class, 'monthReport']);
+Route::get('teachers/month_study_days', [TeacherController::class, 'monthStudyDays']);
+Route::get('teachers/month_report_by_teachers', [TeacherController::class, 'monthReportByTeachers']);
 
 Route::get('lastComers',[AttendanceController::class,'lastComers']);
 Route::get('residential',[AttendanceController::class,'residential']);

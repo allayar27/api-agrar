@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Attendance;
 use App\Models\EducationDays;
 use App\Models\EmployeeEducationDays;
 use App\Models\Teacher;
@@ -188,10 +189,9 @@ class TeacherController extends Controller
         $employee = Teacher::query()->with('attendances')->where('kind', 'employee')->get();
 
         $teacherData = $teachers->map(function ($teacher) use ($day) {
-            $attendance = $teacher->attendances->where('date', $day)
+            $attendances = $teacher->attendances->where('date', $day)
                 ->where('kind', 'teacher')
-                ->whereNotIn('device_id', [21, 22, 23, 24])
-                ->first();
+                ->whereNotIn('device_id', [21, 22, 23, 24]);
 
             $result = [
                 'id' => $teacher->id,
@@ -200,31 +200,32 @@ class TeacherController extends Controller
                 'leave_time' => null,
                 'late_time' => null,
             ];
-            
-            if ($attendance) {
-                if ($attendance->type == 'in') {
-                    $time_in = Carbon::parse('9:00');
-                    $result['arrival_time'] = $attendance->time;
 
-                    if (Carbon::parse($attendance->time) > $time_in) {
-                        $late = Carbon::parse($attendance->time)->diffInMinutes($time_in);
-                        $hours = intdiv($late, 60);
-                        $minutes = $late % 60;
-                        $result['late_time'] = sprintf('%02d:%02d:00', $hours, $minutes);
-                    }
+            $time_in = Carbon::parse('8:30');
 
-                } elseif ($attendance->type == 'out') {
-                    $result['leave_time'] = $attendance->time;
+            $arrival = $attendances->firstWhere('type', 'in');
+            $leave = $attendances->firstWhere('type', 'out');
+
+            if ($arrival) {
+                $result['arrival_time'] = $arrival->time;
+                if (Carbon::parse($arrival->time) > $time_in) {
+                    $late = Carbon::parse($arrival->time)->diffInMinutes($time_in);
+                    $hours = intdiv($late, 60);
+                    $minutes = $late % 60;
+                    $result['late_time'] = sprintf('%02d:%02d:00', $hours, $minutes);
                 }
             }
+            if ($leave) {
+                $result['leave_time'] = $leave->time;
+            }
+
             return $result;
         });
 
         $employeeData = $employee->map(function ($employee) use ($day) {
-            $attendance = $employee->attendances->where('date', $day)
+            $attendances = $employee->attendances->where('date', $day)
                 ->where('kind', 'employee')
-                ->whereNotIn('device_id', [21, 22, 23, 24])
-                ->first();
+                ->whereNotIn('device_id', [21, 22, 23, 24]);
 
             $result = [
                 'id' => $employee->id,
@@ -234,22 +235,24 @@ class TeacherController extends Controller
                 'late_time' => null,
             ];
 
-            if ($attendance) {
-                if ($attendance->type == 'in') {
-                    $time_in = Carbon::parse('9:00');
-                    $result['arrival_time'] = $attendance->time;
+            $time_in = Carbon::parse('8:30');
+            $arrival = $attendances->firstWhere('type', 'in');
+            $leave = $attendances->firstWhere('type', 'out');
 
-                    if (Carbon::parse($attendance->time) > $time_in) {
-                        $late = Carbon::parse($attendance->time)->diffInMinutes($time_in);
-                        $hours = intdiv($late, 60);
-                        $minutes = $late % 60;
-                        $result['late_time'] = sprintf('%02d:%02d:00', $hours, $minutes);
-                    }
-
-                } elseif ($attendance->type == 'out') {
-                    $result['leave_time'] = $attendance->time;
+            if ($arrival) {
+                $result['arrival_time'] = $arrival->time;
+                if (Carbon::parse($arrival->time) > $time_in) {
+                    $late = Carbon::parse($arrival->time)->diffInMinutes($time_in);
+                    $hours = intdiv($late, 60);
+                    $minutes = $late % 60;
+                    $result['late_time'] = sprintf('%02d:%02d:00', $hours, $minutes);
                 }
             }
+
+            if ($leave) {
+                $result['leave_time'] = $leave->time;
+            }
+
             return $result;
         });
 
@@ -296,15 +299,11 @@ class TeacherController extends Controller
     }
 
     public function monthReport(Request $request) {
-        // $valid = $request->validate([
-        //     'kind' => 'required|exists:teachers,kind',
-        // ]);
 
         $month = $request->input('month') ?? Carbon::now()->format('Y-m');
         $startOfMonth = Carbon::createFromFormat('Y-m', $month)->startOfMonth()->toDateString();
         $endOfMonth = Carbon::createFromFormat('Y-m', $month)->endOfMonth()->toDateString();
-        $perPage = $request->input('per_page', 10);
-
+        
         $teachers = Teacher::query()->with('attendances')->where('kind', 'teacher')->get();
         $employees = Teacher::query()->with('attendances')->where('kind', 'employee')->get();
 
@@ -324,7 +323,6 @@ class TeacherController extends Controller
                 $study_teachers_days++;
                 $total_teachers_comers_count += $educationDay->come_teachers;
                 $late_teachers_comers_count += $educationDay->late_teachers;
-                //             $late_comers = 0;
             }
         }
 
@@ -340,7 +338,7 @@ class TeacherController extends Controller
         }
 
         $teachersData = [
-            'total_teachers' => $teachers->count(),
+            'total_teachers' => $teachers->count(), 
             'total_study_days' => $study_teachers_days,
             'late' => $late_teachers_comers_count,
             'comers' => $total_teachers_comers_count,
@@ -361,76 +359,288 @@ class TeacherController extends Controller
             'teachers' => $teachersData,
             'employees' => $employeesData
         ]);
-        // $data = $teachers->map(function ($teacher) use ($startOfMonth, $endOfMonth, $employee_count, $employeeIds, $educationDays) {
+    }
 
-        //     // if ($valid['kind'] == 'teacher') {
-                
+    public function monthStudyDays(Request $request)
+    {
+        $month = $request->input('month') ?? Carbon::now()->format('Y-m');
+        $startOfMonth = Carbon::createFromFormat('Y-m', $month)->startOfMonth()->toDateString();
+        $endOfMonth = Carbon::createFromFormat('Y-m', $month)->endOfMonth()->toDateString();
 
-        //     $attendances = $teacher->attendances->whereBetween('date', [$startOfMonth, $endOfMonth])
-        //         ->where('kind', 'teacher')
-        //         ->where('type', 'in')
-        //         ->whereNotIn('device_id', [21, 22, 23, 24])
-        //         ->groupBy('date');
+        $teachers = Teacher::query()->where('kind', 'teacher')->get();
+        $employees = Teacher::query()->where('kind', 'employee')->get();
 
-        //     $attendances = $attendances->filter(function ($attendance) {
-        //         return $attendance->isNotEmpty();
-        //     });
+        $educationDays = EducationDays::query()
+            ->whereBetween('date', [$startOfMonth, $endOfMonth])
+            ->where('type', 'work_day')->get();
 
-        //     if ($attendances->isEmpty()) {
-        //         return null;
-        //     }
+        $employeeEducationDays = EmployeeEducationDays::query()
+            ->whereBetween('date', [$startOfMonth, $endOfMonth])
+            ->where('type', 'work_day')->get();
 
-        //     $totalTeachers = $employee_count;
-        //     $study_days = 0;
-        //     $late_comers_count = 0;
-        //     $total_comes_count = 0;
-        //     $totalUniqueAttendancesCount = 0;
+        
+
+        $study_teachers_days = 0;
+        $late_teachers_comers_count = 0;
+        $total_teachers_comers_count = 0;
+        $teachers_late_percent = 0;
+        $teachers_come_percent = 0;
+        $days = [];
+        $data = [];
+
+        $study_employees_days = 0;
+        $late_employees_comers_count = 0;
+        $total_employees_comers_count = 0;
+        $employees_late_percent = 0;
+        $employees_come_percent = 0;
+        $employee_days = [];
+        $employee_data = [];
+        
+        foreach ($educationDays as $educationDay) {
+            if ($educationDay->come_teachers > 0.2 * $teachers->count()) {
+                $days = $educationDay->date;
+                $study_teachers_days++;
+                $total_teachers_comers_count = $educationDay->come_teachers;
+                $late_teachers_comers_count = $educationDay->late_teachers;
+
+                $teachers_come_percent = ($total_teachers_comers_count / $teachers->count()) * 100;
+                $teachers_late_percent = ($late_teachers_comers_count / $total_teachers_comers_count) * 100;
+
+                $data[] = [
+                    'days' => $days,
+                    'total_comers' => $total_teachers_comers_count,
+                    'late_comers' => $late_teachers_comers_count,
+                    'come_percent' => $teachers_come_percent,
+                    'late_percent' => $teachers_late_percent
+                ];
+            }
+
             
-        //     foreach ($attendances as $date => $dailyAttendances) {
-        //         $uniqueAttendances = $dailyAttendances->whereIn('attendanceable_id', $employeeIds)
-        //             ->unique('attendanceable_id');
+        }
 
+        foreach ($employeeEducationDays as $educationDay) {
+            if ($educationDay->come_teachers > 0.2 * $employees->count()) {
+                $employee_days = $educationDay->date;
+                $study_employees_days++;
+                $total_employees_comers_count = $educationDay->come_teachers;
+                $late_employees_comers_count = $educationDay->late_teachers;
 
-        //         // foreach ($uniqueAttendances as $uniqueAttendance) {
-        //         //     $getUniqueAttendance = $uniqueAttendance;
-        //         // }
-        //         $totalUniqueAttendances = $uniqueAttendances->count();
-        //         //$count_attendance = count($getUniqueAttendance);
-        //         //$totalUniqueAttendancesCount += $totalUniqueAttendances;
-                
-        //         if ($totalUniqueAttendances > 0.1 * $totalTeachers) {
-        //             $study_days++;
-        //             $late_comers = 0;
-        //             $total_comes_count += $uniqueAttendances->count();
-        //             //$count_comers = $uniqueAttendances->count();
-        //             foreach ($educationDays as $educationDay) {
-    
-        //                 if ($educationDay->date == $date) {
-        //                     $late_comers = $educationDay->late_teachers;
-        //                     $late_comers_count += $late_comers;
-        //                     break;
-        //                 }
-        //             }
+                $employees_come_percent = ($total_employees_comers_count / $employees->count()) * 100;
+                $employees_late_percent = ($late_employees_comers_count / $total_employees_comers_count) * 100;
 
-        //         }
-        //     }
-        //     return $total_comes_count;
-        //     //return $study_days;
-        //     return [
-        //         'total_teachers' => $totalTeachers,
-        //         'total_study_days' => $study_days,
-        //         'late' => $late_comers_count,
-        //         'comers' => $total_comes_count,
-        //         'late_percent' => $late_comers_count > 0 ? ($late_comers_count / $total_comes_count) * 100 : 0,
-        //         'come_percent' => $study_days ? ($total_comes_count / ($study_days * $totalTeachers)) * 100 : 0,
-        //     ];
-        // });
+                $employee_data[] = [
+                    'days' => $employee_days,
+                    'total_comers' => $total_employees_comers_count,
+                    'late_comers' => $late_employees_comers_count,
+                    'come_percent' => $employees_come_percent,
+                    'late_percent' => $employees_late_percent
+                ];
+            }
 
-        //return $data->filter()->values();
+            
+        }
+        
+        $teacherItems = [
+            'total_teachers' => $teachers->count(),
+            'study_days' => $study_teachers_days,
+            'data' => $data
+        ];
+
+        $employeeItems = [
+            'total_employees' => $employees->count(),
+            'study_days' => $study_employees_days,
+            'data' => $employee_data
+        ];
+
+        return response()->json([
+            'teacher' => $teacherItems,
+            'employee' => $employeeItems
+        ], 200);
 
     }
 
-    
+    public function monthReportByTeachers(Request $request)
+    {
+        $month = $request->input('month') ?? Carbon::now()->format('Y-m');
+        $startOfMonth = Carbon::createFromFormat('Y-m', $month)->startOfMonth()->toDateString();
+        $endOfMonth = Carbon::createFromFormat('Y-m', $month)->endOfMonth()->toDateString();
 
+        $perPage = request('per_page', 20);
+        $teachers = Teacher::query()->with('attendances')->where('kind', 'teacher')->get();
+        $employees = Teacher::query()->with('attendances')->where('kind', 'employee')->get();
+
+        $teachers_count = $teachers->count();
+        $teacherIds = $teachers->pluck('id');
+
+        $employees_count = $employees->count();
+        $emplyeeIds = $employees->pluck('id');
+
+        $educationDays = EducationDays::query()
+            ->whereBetween('date', [$startOfMonth, $endOfMonth])
+            ->where('type', 'work_day')->pluck('date')->toArray();
+
+        $employeeEducationDays = EmployeeEducationDays::query()
+            ->whereBetween('date', [$startOfMonth, $endOfMonth])
+            ->where('type', 'work_day')->pluck('date')->toArray();
+
+            $study_days = 0;
+            $teachersReport = [];
+
+            $employee_study_days = 0;
+            $employeesReport = [];
+            
+            $attendances = Attendance::whereBetween('date', [$startOfMonth, $endOfMonth])
+                                    ->where('kind', 'teacher')
+                                    ->where('type', 'in')
+                                    ->whereNotIn('device_id', [21, 22, 23, 24])
+                                    ->get();
+
+        $employeeAttendances = Attendance::whereBetween('date', [$startOfMonth, $endOfMonth])
+            ->where('kind', 'employee')
+            ->where('type', 'in')
+            ->whereNotIn('device_id', [21, 22, 23, 24])
+            ->get();
+
+            foreach ($attendances->groupBy('date') as $date => $dailyAttendances) {
+                $uniqueAttendances = $dailyAttendances->whereIn('attendanceable_id', $teacherIds)
+                    ->unique('attendanceable_id');
+                
+                if (in_array($date, $educationDays) && $uniqueAttendances->count() > 0.2 * $teachers_count) {
+                    $study_days++;
+
+                    foreach ($teachers as $teacher) {
+                        $teacherId = $teacher->id;
+                        if (!isset($teachersReport[$teacherId])) {
+                            $teachersReport[$teacherId] = [
+                                'total_teachers' => $teachers_count,
+                                'total_study_days' => $study_days,
+                                'id' => $teacher->id,
+                                'name' => $teacher->name,
+                                'attended_count' => 0,
+                                'absents_count' => 0,
+                                'late_days' => [],
+                                'absent_days' => []
+                            ];
+                        }
+
+                        $attendance = $teacher->attendances->where('date', $date)
+                                    ->where('type', 'in')
+                                    ->where('kind', 'teacher')
+                                    ->first();
+
+                        if ($attendance) {
+                            $time_in = Carbon::parse('8:30');
+                            $teachersReport[$teacherId]['attended_count']++;
+
+                            if (Carbon::parse($attendance->time) > $time_in) {
+                                $teachersReport[$teacherId]['late_days'][] = [
+                                    'date' => $date,
+                                    'late_time' => $attendance->time,
+                                ];
+                            }
+                            else {
+                                $teachersReport[$teacherId]['late_days'];
+                            }
+
+                        } else {
+                            $teachersReport[$teacherId]['absents_count']++;
+                            $teachersReport[$teacherId]['absent_days'][] = $date;
+                        }
+                    }
+                }
+            }
+
+        foreach ($employeeAttendances->groupBy('date') as $date => $dailyAttendances) {
+            $uniqueAttendances = $dailyAttendances->whereIn('attendanceable_id', $emplyeeIds)
+                ->unique('attendanceable_id');
+
+            if (in_array($date, $employeeEducationDays) && $uniqueAttendances->count() > 0.2 * $employees_count) {
+                $employee_study_days++;
+
+                foreach ($employees as $employee) {
+                    $employeeId = $employee->id;
+                    if (!isset($employeesReport[$employeeId])) {
+                        $employeesReport[$employeeId] = [
+                            'total_employees' => $employees_count,
+                            'total_study_days' => $employee_study_days,
+                            'id' => $employee->id,
+                            'name' => $employee->name,
+                            'attended_count' => 0,
+                            'absents_count' => 0,
+                            'late_days' => [],
+                            'absent_days' => []
+                        ];
+                    }
+
+                    $attendance = $employee->attendances->where('date', $date)
+                        ->where('type', 'in')
+                        ->where('kind', 'employee')
+                        ->first();
+
+                    if ($attendance) {
+                        $time_in = Carbon::parse('8:30');
+                        $employeesReport[$employeeId]['attended_count']++;
+
+                        if (Carbon::parse($attendance->time) > $time_in) {
+                            $employeesReport[$employeeId]['late_days'][] = [
+                                'date' => $date,
+                                'late_time' => $attendance->time,
+                            ];
+                        } else {
+                            $employeesReport[$employeeId]['late_days'];
+                        }
+
+                    } else {
+                        $employeesReport[$employeeId]['absents_count']++;
+                        $employeesReport[$employeeId]['absent_days'][] = $date;
+                    }
+                }
+            }
+        }
+
+        $teachersData = collect(array_values($teachersReport));
+        $employeesData = collect( array_values($employeesReport));
+
+        $currentPage = LengthAwarePaginator::resolveCurrentPage();
+        $paginatedEmployees = new LengthAwarePaginator(
+            $employeesData->forPage($currentPage, $perPage)->values(),
+            $employeesData->count(),
+            $perPage,
+            $currentPage,
+            ['path' => request()->url(), 'query' => request()->query()]
+        );
+
+        $paginatedTeachers = new LengthAwarePaginator(
+            $teachersData->forPage($currentPage, $perPage)->values(),
+            $teachersData->count(),
+            $perPage,
+            $currentPage,
+            ['path' => request()->url(), 'query' => request()->query()]
+        );
+
+        return response()->json([
+            'success' => true,
+            'teachers_data' => [
+                'items' => $paginatedTeachers->items(),
+                'pagination' => [
+                    'total' => $paginatedTeachers->total(),
+                    'current_page' => $paginatedTeachers->currentPage(),
+                    'last_page' => $paginatedTeachers->lastPage(),
+                    'per_page' => $paginatedTeachers->perPage(),
+                    'total_pages' => $paginatedTeachers->lastPage(),
+                ],
+            ],
+            'employees_data' => [
+                'items' => $paginatedEmployees->items(),
+                'pagination' => [
+                    'total' => $paginatedEmployees->total(),
+                    'current_page' => $paginatedEmployees->currentPage(),
+                    'last_page' => $paginatedEmployees->lastPage(),
+                    'per_page' => $paginatedEmployees->perPage(),
+                    'total_pages' => $paginatedEmployees->lastPage(),
+                ],
+            ],
+        ]);
+    }
 
 }
