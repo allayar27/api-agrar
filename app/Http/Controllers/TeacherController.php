@@ -513,7 +513,6 @@ class TeacherController extends Controller
                         if (!isset($teachersReport[$teacherId])) {
                             $teachersReport[$teacherId] = [
                                 'total_teachers' => $teachers_count,
-                                'total_study_days' => $study_days,
                                 'id' => $teacher->id,
                                 'name' => $teacher->name,
                                 'attended_count' => 0,
@@ -548,6 +547,7 @@ class TeacherController extends Controller
                         }
                     }
                 }
+                
             }
 
         foreach ($employeeAttendances->groupBy('date') as $date => $dailyAttendances) {
@@ -562,7 +562,6 @@ class TeacherController extends Controller
                     if (!isset($employeesReport[$employeeId])) {
                         $employeesReport[$employeeId] = [
                             'total_employees' => $employees_count,
-                            'total_study_days' => $employee_study_days,
                             'id' => $employee->id,
                             'name' => $employee->name,
                             'attended_count' => 0,
@@ -596,7 +595,9 @@ class TeacherController extends Controller
                     }
                 }
             }
+            
         }
+        
 
         $teachersData = collect(array_values($teachersReport));
         $employeesData = collect( array_values($employeesReport));
@@ -621,6 +622,7 @@ class TeacherController extends Controller
         return response()->json([
             'success' => true,
             'teachers_data' => [
+                'teacher_study_days' => $study_days,
                 'items' => $paginatedTeachers->items(),
                 'pagination' => [
                     'total' => $paginatedTeachers->total(),
@@ -631,6 +633,7 @@ class TeacherController extends Controller
                 ],
             ],
             'employees_data' => [
+                'employee_study_days' => $employee_study_days,
                 'items' => $paginatedEmployees->items(),
                 'pagination' => [
                     'total' => $paginatedEmployees->total(),
