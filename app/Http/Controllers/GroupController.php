@@ -85,11 +85,11 @@ class GroupController extends Controller
  
             $arrival = $attendances->firstWhere('type', 'in');
             $leave = $attendances->firstWhere('type', 'out');
-            $time_in = $student->time_in($today);
+            $time_in = Carbon::parse('8:30');
 
             if ($arrival) {
                 $result['arrival_time'] = $arrival->time;
-                if ($arrival->time > $time_in) {
+                if (Carbon::parse($arrival->time) > $time_in) {
                     $late = Carbon::parse($arrival->time)->diffInMinutes(Carbon::parse($time_in));
                     $hours = intdiv($late, 60);
                     $minutes = $late % 60;
