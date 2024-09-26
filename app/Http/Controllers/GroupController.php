@@ -68,8 +68,8 @@ class GroupController extends Controller
         
         $data = $group->students->map(function ($student) use ($group, $today) {
 
-            $attendances = $student->attendances()
-                        ->whereDate('date', $today)
+            $attendances = $student->attendances
+                        ->where('date', $today)
                         ->where('kind', 'student')
                         ->whereNotIn('device_id', [21, 22, 23, 24]);
             $result = [
@@ -82,11 +82,10 @@ class GroupController extends Controller
                 'leave_time' => null,
                 'late_time' => null,
             ];
-            $attendance = $attendances->first();
-            $time_in = $attendance->user->time_in($today);
+ 
             $arrival = $attendances->firstWhere('type', 'in');
             $leave = $attendances->firstWhere('type', 'out');
-
+            $time_in = $student->time_in($today);
 
             if ($arrival) {
                 $result['arrival_time'] = $arrival->time;
