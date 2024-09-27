@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             Buildingseeder::class,
             Deviceseeder::class,
+            AdminUserSeeder::class,
         ]);
     }
 }
