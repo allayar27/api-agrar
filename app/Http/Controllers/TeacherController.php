@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Attendance;
+use App\Models\Device;
 use App\Models\EducationDays;
 use App\Models\EmployeeEducationDays;
 use App\Models\Teacher;
@@ -185,97 +186,135 @@ class TeacherController extends Controller
         $day = $request->input('day') ?? Carbon::today()->format('Y-m-d');
         $perPage = request('per_page', 20);
 
-        $teachers = Teacher::query()->with('attendances')->where('kind', 'teacher')->get();
-        $employee = Teacher::query()->with('attendances')->where('kind', 'employee')->get();
+        $teachers = Teacher::query()->where('kind', 'teacher')->get();
+        $employees = Teacher::query()->where('kind', 'employee')->get();
+        $employeeIds = $employees->pluck('id');
+        $teacherIds = $teachers->pluck('id');
 
-        $teacherData = $teachers->map(function ($teacher) use ($day) {
-            $attendances = $teacher->attendances->where('date', $day)
-                ->where('kind', 'teacher')
-                ->whereNotIn('device_id', [21, 22, 23, 24]);
+        $teacher_arrivals = Attendance::where('kind', 'teacher')->where('date', $day)
+            ->where('type', 'in')
+            ->whereIn('attendanceable_id', $teacherIds)
+            ->distinct('attendanceable_id')
+            ->get();
 
-            $result = [
-                'id' => $teacher->id,
-                'name' => $teacher->name,
-                'arrival_time' => null,
-                'leave_time' => null,
-                'late_time' => null,
-            ];
+        $teacher_leaves = Attendance::where('kind', 'teacher')->where('date', $day)
+            ->where('type', 'out')
+            ->whereIn('attendanceable_id', $teacherIds)
+            ->distinct('attendanceable_id')
+            ->get();
 
-            $time_in = Carbon::parse('8:30');
+        $teacherData = [];
+        $teachers_time_in = Carbon::parse('8:30');
 
-            $arrival = $attendances->firstWhere('type', 'in');
-            $leave = $attendances->firstWhere('type', 'out');
+        foreach ($teacher_arrivals as $attendance) {
+            $device = Device::query()->with('building')->findOrFail($attendance->device_id);
+            if ($attendance && $device->building['type'] != 'residential') {
+                foreach ($teachers as $teacher) {
+                    $teacherId = $teacher->id;
+                    if ($attendance->attendanceable_id == $teacherId) {
+                        if (!isset($teacherData[$teacherId])) {
+                            $teacherData[$teacherId] = [
+                                'teacher_id' => $teacherId,
+                                'teacher_name' => $teacher->name,
+                                'arrival_time' => $attendance->time,
+                                'device_id' => $attendance->device_id,
+                                'leave_time' => null,
+                                'late_time' => null,
+                            ];
+                        }
 
-            if ($arrival) {
-                $result['arrival_time'] = $arrival->time;
-                if (Carbon::parse($arrival->time) > $time_in) {
-                    $late = Carbon::parse($arrival->time)->diffInMinutes($time_in);
-                    $hours = intdiv($late, 60);
-                    $minutes = $late % 60;
-                    $result['late_time'] = sprintf('%02d:%02d:00', $hours, $minutes);
+                        if (Carbon::parse($attendance->time) > $teachers_time_in) {
+                            $late = Carbon::parse($attendance->time)->diffInMinutes($teachers_time_in);
+                            $hours = intdiv($late, 60);
+                            $minutes = $late % 60;
+                            $teacherData[$teacherId]['late_time'] = sprintf('%02d:%02d:00', $hours, $minutes);
+                        }
+                        if ($teacher_leaves->count() > 0) {
+                            foreach ($teacher_leaves as $leave) {
+                                if ($leave->attendanceable_id == $teacherId) {
+                                    $teacherData[$teacherId]['leave_time'] = $leave->time;
+                                }
+                            }
+                        }
+                    }
                 }
             }
-            if ($leave) {
-                $result['leave_time'] = $leave->time;
-            }
+        }
 
-            return $result;
-        });
+        $arrivals = Attendance::where('kind', 'employee')->where('date', $day)
+            ->where('type', 'in')
+            ->whereIn('attendanceable_id', $employeeIds)
+            ->distinct('attendanceable_id')
+            ->get();
 
-        $employeeData = $employee->map(function ($employee) use ($day) {
-            $attendances = $employee->attendances->where('date', $day)
-                ->where('kind', 'employee')
-                ->whereNotIn('device_id', [21, 22, 23, 24]);
+        $leaves = Attendance::where('kind', 'employee')->where('date', $day)
+            ->where('type', 'out')
+            ->whereIn('attendanceable_id', $employeeIds)
+            ->distinct('attendanceable_id')
+            ->get();
 
-            $result = [
-                'id' => $employee->id,
-                'name' => $employee->name,
-                'arrival_time' => null,
-                'leave_time' => null,
-                'late_time' => null,
-            ];
+        $time_in = Carbon::parse('8:30');
+        $data = [];
 
-            $time_in = Carbon::parse('8:30');
-            $arrival = $attendances->firstWhere('type', 'in');
-            $leave = $attendances->firstWhere('type', 'out');
 
-            if ($arrival) {
-                $result['arrival_time'] = $arrival->time;
-                if (Carbon::parse($arrival->time) > $time_in) {
-                    $late = Carbon::parse($arrival->time)->diffInMinutes($time_in);
-                    $hours = intdiv($late, 60);
-                    $minutes = $late % 60;
-                    $result['late_time'] = sprintf('%02d:%02d:00', $hours, $minutes);
+        foreach ($arrivals as $attendance) {
+            $device = Device::query()->with('building')->findOrFail($attendance->device_id);
+            if ($attendance && $device->building['type'] != 'residential') {
+                foreach ($employees as $employee) {
+                    $employeeId = $employee->id;
+                    if ($attendance->attendanceable_id == $employeeId) {
+                        if (!isset($data[$employeeId])) {
+                            $data[$employeeId] = [
+                                'employee_id' => $employeeId,
+                                'employee_name' => $employee->name,
+                                'arrival_time' => $attendance->time,
+                                'device_id' => $attendance->device_id,
+                                'leave_time' => null,
+                                'late_time' => null,
+                            ];
+                        }
+
+                        if (Carbon::parse($attendance->time) > $time_in) {
+                            $late = Carbon::parse($attendance->time)->diffInMinutes($time_in);
+                            $hours = intdiv($late, 60);
+                            $minutes = $late % 60;
+                            $data[$employeeId]['late_time'] = sprintf('%02d:%02d:00', $hours, $minutes);
+                        }
+                        if ($leaves->count() > 0) {
+                            foreach ($leaves as $leave) {
+                                if ($leave->attendanceable_id == $employeeId) {
+                                    $data[$employeeId]['leave_time'] = $leave->time;
+                                }
+                            }
+                        }
+                    }
                 }
             }
-
-            if ($leave) {
-                $result['leave_time'] = $leave->time;
-            }
-
-            return $result;
-        });
+        }
+        $teachersData = collect(array_values($teacherData));
+        $employeesData = collect(array_values($data));
 
         $currentPage = LengthAwarePaginator::resolveCurrentPage();
         $paginatedEmployees = new LengthAwarePaginator(
-            $employeeData->forPage($currentPage, $perPage)->values(),
-            $employeeData->count(),
+            $employeesData->forPage($currentPage, $perPage)->values(),
+            $employeesData->count(),
             $perPage,
             $currentPage,
             ['path' => request()->url(), 'query' => request()->query()]
         );
 
         $paginatedTeachers = new LengthAwarePaginator(
-            $teacherData->forPage($currentPage, $perPage)->values(),
-            $teacherData->count(),
+            $teachersData->forPage($currentPage, $perPage)->values(),
+            $teachersData->count(),
             $perPage,
             $currentPage,
             ['path' => request()->url(), 'query' => request()->query()]
         );
 
-        return response()->json([
+         return response()->json([
             'success' => true,
             'teachers_data' => [
+                'teachers_count' => $paginatedTeachers->count(),
                 'items' => $paginatedTeachers->items(),
                 'pagination' => [
                     'total' => $paginatedTeachers->total(),
@@ -286,6 +325,7 @@ class TeacherController extends Controller
                 ],
             ],
             'employees_data' => [
+                'emplyee_count' => $paginatedEmployees->count(),
                 'items' => $paginatedEmployees->items(),
                 'pagination' => [
                     'total' => $paginatedEmployees->total(),

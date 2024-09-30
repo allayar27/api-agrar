@@ -32,33 +32,34 @@ class RecordTeacherStatistics
         try {
             $attendance = $event->attendance;
             $device = Device::query()->with('building')->findOrFail($attendance->device_id);
-            if (!$attendance && $device !== null && $device->building['type'] != 'residential') {
-                return;
+            if ($attendance || $device->building['type'] != 'residential') {
+                //     return;
+                // }
+                $teachers = Teacher::pluck('id');
+
+                $come_teachers_count = $this->comers('teacher', $teachers, $attendance);
+                $come_employees_count = $this->comers('employee', $teachers, $attendance);
+
+                $late_teachers_count = $this->laters('teacher', $teachers, $attendance);
+                $late_employees_count = $this->laters('employee', $teachers, $attendance);
+
+                EducationDays::query()->updateOrCreate(
+                    ['date' => $attendance->date],
+                    [
+                        'all_teachers' => Teacher::query()->where('kind', 'teacher')->count(),
+                        'come_teachers' => $come_teachers_count,
+                        'late_teachers' => $late_teachers_count,
+                    ]
+                );
+                EmployeeEducationDays::query()->updateOrCreate(
+                    ['date' => $attendance->date],
+                    [
+                        'all_teachers' => Teacher::where('kind', 'employee')->count(),
+                        'come_teachers' => $come_employees_count,
+                        'late_teachers' => $late_employees_count,
+                    ]
+                );
             }
-            $teachers = Teacher::pluck('id');
-
-            $come_teachers_count = $this->comers('teacher', $teachers,$attendance);
-            $come_employees_count = $this->comers('employee', $teachers,$attendance);
-
-            $late_teachers_count = $this->laters('teacher', $teachers, $attendance);
-            $late_employees_count = $this->laters('employee', $teachers, $attendance);
-
-            EducationDays::query()->updateOrCreate(
-                ['date' => $attendance->date],
-                [
-                    'all_teachers' => Teacher::query()->where('kind', 'teacher')->count(),
-                    'come_teachers' => $come_teachers_count,
-                    'late_teachers' => $late_teachers_count,
-                ]
-            );
-            EmployeeEducationDays::query()->updateOrCreate(
-                ['date' => $attendance->date],
-                [
-                    'all_teachers' => Teacher::where('kind', 'employee')->count(),
-                    'come_teachers' => $come_employees_count,
-                    'late_teachers' => $late_employees_count,
-                ]
-            );
             DB::commit();
         } catch (Throwable $th) {
             Db::rollBack();
