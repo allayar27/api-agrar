@@ -211,46 +211,55 @@ class StudentController extends Controller
 
     public function studentAttendance(int $id): JsonResponse
     {
+        $today = request()->input('day') ?? Carbon::today()->toDateString();
         $student = Student::query()
             ->with([
                 'attendances' => function ($query) {
-                    $query->orderBy('date_time', 'DESC')->take(1);
+                    $query->orderBy('date_time', 'DESC'); //->take(1);
                 },
                 'group',
                 'faculty'
             ])
             ->findOrFail($id);
 
-        $lastAttendance = $student->attendances->first();
-        if(!$lastAttendance){
-            return response()->json([
-                'success' => false,
-            ],404);
-        }
-        $device = Device::query()->with('building')->findOrFail($lastAttendance->device_id);
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'student' => [
-                    'id' => $student->id,
-                    'name' => $student->name,
-                    'group' => [
-                        'id' => $student->group ? $student->group->id : null,
-                        'name' => $student->group ? $student->group->name : null,
-                    ],
-                    'faculty' => $student->faculty ? $student->faculty->name : null,
-                    'last_attendance' => $lastAttendance ? [
-                        'date' => $lastAttendance->date,
-                        'time' => $lastAttendance->time,
-                        'type' => $lastAttendance->type,
-                        'building' => [
-                            'name' => $device->building->name,
-                        ]
-                    ] : null,
+        // $lastAttendance = $student->attendances->first();
+        // if(!$lastAttendance){
+        //     return response()->json([
+        //         'success' => false,
+        //     ],404);
+        // }
+        $data = [
+            'student' => [
+                'id' => $student->id,
+                'name' => $student->name,
+                'group' => [
+                    'id' => $student->group ? $student->group->id : null,
+                    'name' => $student->group ? $student->group->name : null,
+                ],
+                'faculty' => $student->faculty ? $student->faculty->name : null,
+                'attendances' => [
+
                 ]
             ]
-        ]);
+        ];
 
+        $attendances = $student->attendances()->where('date', $today)->get();
+        foreach ($attendances as $attendance) {
+            $device = Device::query()->with('building')->findOrFail($attendance->device_id);
+            $data['student']['attendances'][] = [
+                'date' => $attendance->date,
+                'time' => $attendance->time,
+                'type' => $attendance->type,
+                'building' => [
+                    'name' => $device->building->name
+                ]
+            ];
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $data
+        ]);
 
     }
 
