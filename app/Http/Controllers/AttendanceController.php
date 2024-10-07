@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\TelegramCallMethod;
 use App\Events\StudentAttendanceCreated;
 use App\Events\TeacherAttendanceCreated;
 use App\Http\Requests\Attendance\StoreAttendanceRequest;
@@ -12,9 +13,11 @@ use App\Models\Doktarant;
 use App\Models\Student;
 use App\Models\Teacher;
 use App\Models\UsersLog;
+use App\Services\TelegramUserLogs;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Telegram\Bot\Laravel\Facades\Telegram;
 
@@ -216,14 +219,44 @@ class AttendanceController extends Controller
 //            'chat_id' => '906372350',
 //            'text'    => $message
 //        ]);
-        UsersLog::query()->create([
+        $userLog = UsersLog::query()->create([
             'hemis_id' => $hemis_id,
             'full_name' => $name,
             'PersonGroup' => $PersonGroup,
             'date_time' => $date_time,
             'device_name' => $device_name,
         ]);
+
+        $formattedData = $this->formatUsersLogData($userLog);
+        $chat_id = config('services.telegram.chat_id');
+
+        $url = "https://api.telegram.org/bot" . config('services.telegram.second_api_key') . "/sendMessage";
+
+        Http::post($url, [
+            'chat_id' => $chat_id,
+            'text' => $formattedData,
+            'parse_mode' => 'Markdown'
+        ]);
     }
+
+    private function formatUsersLogData($usersLogs)
+    {
+        $data = "*UsersLog Data:*\n";
+
+        foreach ($usersLogs as $log) {
+            $data .= "\n*Full Name:* {$log->full_name}\n";
+            $data .= "*Hemis ID:* {$log->hemis_id}\n";
+            $data .= "*Person Group:* {$log->PersonGroup}\n";
+            $data .= "*Date:* {$log->date_time}\n";
+            $data .= "*Device Name:* {$log->device_name}\n";
+            $data .= "*Device ID:* {$log->device_id}\n";
+            $data .= "------------------------\n";
+        }
+        return $data;
+    }
+
+
+
 
     public function residential(Request $request): JsonResponse
     {
