@@ -48,10 +48,11 @@ class StudentController extends Controller
             return [
                 'id' => $student->id,
                 'name' => $student->name,
+                'hemis_id' => $student->hemis_id,
                 'faculty' => [
                     'id' => $student->faculty->id,
                     'name' => $student->faculty->name,
-                    'hemis_id' => $student->hemis_id
+                    
                 ],
                 'group' => [
                     'id' => $student->group->id,
