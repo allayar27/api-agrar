@@ -223,7 +223,7 @@ class AttendanceController extends Controller
             'hemis_id' => $hemis_id,
             'full_name' => $name,
             'PersonGroup' => $PersonGroup,
-            'date_time' => $date_time,
+            'date_time' => $date_time, 
             'device_name' => $device_name,
         ]);
 

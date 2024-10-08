@@ -50,7 +50,8 @@ class StudentController extends Controller
                 'name' => $student->name,
                 'faculty' => [
                     'id' => $student->faculty->id,
-                    'name' => $student->faculty->name
+                    'name' => $student->faculty->name,
+                    'hemis_id' => $student->hemis_id
                 ],
                 'group' => [
                     'id' => $student->group->id,
@@ -157,11 +158,20 @@ class StudentController extends Controller
         $day = $request->input('day', Carbon::today()->format('Y-m-d'));
         $perPage = $request->input('per_page', 10);
 
+        
         $groups = Group::with([
             'students.attendances' => function ($query) use ($day) {
                 $query->where('date', $day);
             }
-        ])->withCount('students')->where('faculty_id', $request->faculty_id)->get();
+        ])->withCount('students');
+
+        if ($request->faculty_id) {
+            $groups->where('faculty_id', $request->faculty_id)->get();
+        }
+        else {
+            $groups->get();
+        }
+       
 
         $result = $groups->map(function ($group) use ($day) {
             $totalStudents = $group->students_count ?? 0;
