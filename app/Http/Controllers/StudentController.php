@@ -163,14 +163,8 @@ class StudentController extends Controller
             'students.attendances' => function ($query) use ($day) {
                 $query->where('date', $day);
             }
-        ])->withCount('students');
+        ])->withCount('students')->where('faculty_id', $request->faculty_id)->get();
 
-        if ($request->faculty_id) {
-            $groups->where('faculty_id', $request->faculty_id)->get();
-        }
-        else {
-            $groups->get();
-        }
        
 
         $result = $groups->map(function ($group) use ($day) {
