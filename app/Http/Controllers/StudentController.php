@@ -150,7 +150,6 @@ class StudentController extends Controller
             'data' => $pagedResult->items(),
 
         ]);
-
     }
 
     public function noteComers(NoteComersRequest $request): JsonResponse
