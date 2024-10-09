@@ -226,33 +226,37 @@ class AttendanceController extends Controller
             'date_time' => $date_time, 
             'device_name' => $device_name,
         ]);
+        
+        \Log::info('Existing userLogs: ' . ($userLog ? 'Yes' : 'No'));
+        $this->sendAttendanceNotification($userLog);
+        
+    }
 
-        $formattedData = $this->formatUsersLogData($userLog);
+    private function sendAttendanceNotification(UsersLog $usersLogs)
+    {
+        $data = "*UsersLog Data:*\n";
+
+        $data .= "\n*Full Name:* {$usersLogs->full_name}\n";
+        $data .= "*Hemis ID:* {$usersLogs->hemis_id}\n";
+        $data .= "*Person Group:* {$usersLogs->PersonGroup}\n";
+        $data .= "*Date:* {$usersLogs->date_time}\n";
+        $data .= "*Device Name:* {$usersLogs->device_name}\n";
+        $data .= "*Device ID:* {$usersLogs->device_id}\n";
+
+        $this->sendTelegramMessage($data);
+    }
+
+    protected function sendTelegramMessage($message)
+    {
         $chat_id = config('services.telegram.chat_id');
 
         $url = "https://api.telegram.org/bot" . config('services.telegram.second_api_key') . "/sendMessage";
 
         Http::post($url, [
             'chat_id' => $chat_id,
-            'text' => $formattedData,
+            'text' => $message,
             'parse_mode' => 'Markdown'
         ]);
-    }
-
-    private function formatUsersLogData($usersLogs)
-    {
-        $data = "*UsersLog Data:*\n";
-
-        foreach ($usersLogs as $log) {
-            $data .= "\n*Full Name:* {$log->full_name}\n";
-            $data .= "*Hemis ID:* {$log->hemis_id}\n";
-            $data .= "*Person Group:* {$log->PersonGroup}\n";
-            $data .= "*Date:* {$log->date_time}\n";
-            $data .= "*Device Name:* {$log->device_name}\n";
-            $data .= "*Device ID:* {$log->device_id}\n";
-            $data .= "------------------------\n";
-        }
-        return $data;
     }
 
 
