@@ -3,7 +3,6 @@
 namespace App\Console\Commands;
 
 use Carbon\Carbon;
-use App\Models\Group;
 use Illuminate\Console\Command;
 use App\Jobs\ScheduleImportByGroup;
 use Illuminate\Support\Facades\Log;
@@ -30,8 +29,8 @@ class DailyStudentSchedule extends Command
      */
     public function handle()
     {
-        $response = $this->fetchScheduleData();  
-        
+        $response = $this->fetchScheduleData();
+
         $totalPages = $response->json()['data']['pagination']['pageCount'];
 
         for ($page = 1; $page <= $totalPages; $page++) {
@@ -40,6 +39,10 @@ class DailyStudentSchedule extends Command
         Log::info("All groups have been scheduled:". Carbon::now());
         $this->info('All groups have been scheduled');
     }
+
+    /**
+     * @return \GuzzleHttp\Promise\PromiseInterface|\Illuminate\Http\Client\Response
+     */
     private function fetchScheduleData()
     {
         return Http::withHeaders([

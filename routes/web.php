@@ -18,5 +18,5 @@ Route::middleware(['auth'])->prefix('admin')->group(function () {
     });
 
     Route::get('logout', [AuthController::class, 'logout'])->name('auth.logout');
-
+    Route::get('test',[\App\Http\Controllers\web\GroupScheduleController::class,'test'])->name('test');
 });

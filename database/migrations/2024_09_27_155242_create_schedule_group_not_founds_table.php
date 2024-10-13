@@ -16,8 +16,8 @@ return new class extends Migration
             $table->id();
             $table->foreignIdFor(Group::class);
             $table->date('day');
-            $table->integer('counter');
-            $table->json('students');
+            $table->integer('counter')->default(0);
+            $table->json('students')->nullable();
             $table->timestamps();
         });
     }
