@@ -31,22 +31,19 @@ class ImportDays extends Command
      */
     public function handle():void
     {
-        try {
-//            Artisan::call('app:daily-student-schedule');
+            Artisan::call('app:daily-student-schedule');
             $groups = Group::all();
-//            $today = now()->format('Y-m-d');
+            sleep(15);
             $today = '2024-09-16';
-            $schedules = StudentSchedule::query()->whereDate('startweektime' ,'<=' , $today)
+            $schedule = StudentSchedule::query()->whereDate('startweektime' ,'<=' , $today)
                 ->whereDate('endweektime' ,'>=' , $today)->first();
-            if ($schedules){
+            if ($schedule){
                 foreach ($groups as $group) {
-                    ImportSchedulesByDayJob::dispatch($group->id,$schedules->id);
+                    ImportSchedulesByDayJob::dispatch($group->id, $schedule->id, $today);
                 }
                 Log::info('Dispatched ImportSchedulesByDayJob for all groups.');
+            }else{
+                Log::info("Schedules not found: $today");
             }
-            Log::info('Schedules not found.');
-        }catch (\Throwable $th){
-            ErrorAddHelper::logException($th);
-        }
     }
 }
