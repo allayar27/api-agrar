@@ -16,7 +16,7 @@ class AuthController extends Controller
     public function index(): View|RedirectResponse
     {
         if (auth()->check()) {
-            return redirect()->route('dashboard.index');
+            return redirect()->route('dashboard.users');
         }
         return view('auth.login');
     }
@@ -24,7 +24,7 @@ class AuthController extends Controller
     public function login(Request $request): RedirectResponse
     {
         if (auth()->check()) {
-            return redirect()->route('dashboard.index')->with('res', [
+            return redirect()->route('dashboard.users')->with('res', [
                 'method' => 'success',
                 'msg' => 'Добро пожаловать'
             ]);

@@ -17,7 +17,7 @@ class NoteComersRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'faculty_id' => 'required|exists:faculties,id',
+            'faculty_id' => 'nullable|exists:faculties,id',
         ];
     }
 }

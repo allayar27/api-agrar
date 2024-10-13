@@ -5,15 +5,12 @@ namespace App\Http\Controllers;
 use App\Http\Requests\NoteComersRequest;
 use App\Http\Requests\Student\LateStudentsRequest;
 use App\Http\Requests\Student\StudentMonthlyRequest;
-use App\Models\Attendance;
-
 use App\Imports\StudentImport;
-
-use App\Models\Building;
 use App\Models\Device;
 use App\Models\Group;
 use App\Models\GroupEducationdays;
 use App\Models\Student;
+use App\Models\StudentScheduleDay;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -52,7 +49,7 @@ class StudentController extends Controller
                 'faculty' => [
                     'id' => $student->faculty->id,
                     'name' => $student->faculty->name,
-                    
+
                 ],
                 'group' => [
                     'id' => $student->group->id,
@@ -85,15 +82,16 @@ class StudentController extends Controller
         ]);
     }
 
-    public function lateComers(LateStudentsRequest $request)
+    public function lateComers(LateStudentsRequest $request): JsonResponse
     {
-
         $day = $request->input('day', Carbon::today()->format('Y-m-d'));
         $perPage = $request->input('per_page', 10);
 
         $groups = Group::with([
             'groupEducationDays' => function ($query) use ($day) {
                 $query->where('day', $day);
+            },'scheduleDays' => function ($query) use ($day) {
+            $query->where('date', $day);
             },
             'students.attendances' => function ($query) use ($day) {
                 $query->where('date', $day);
@@ -102,6 +100,10 @@ class StudentController extends Controller
 
         $result = $groups->map(function ($group) use ($day) {
             $educationDay = $group->groupEducationDays->first();
+            if (!$educationDay) {
+                return null;
+            }
+            $educationDay = $group->groupEducationDays->first();
             $totalStudents = $group->students_count ?? 0;
             $presentStudents = $educationDay->come_students ?? 0;
 
@@ -109,8 +111,8 @@ class StudentController extends Controller
 
             foreach ($group->students as $student) {
                 $attendance = $student->attendances->first();
-                if ($attendance && $attendance->time > $attendance->user->time_in($day)) {
-                    $late = Carbon::parse($attendance->time)->diffInMinutes(Carbon::parse($attendance->user->time_in($day)));
+                if ($attendance && $attendance->time > $educationDay->time_in) {
+                    $late = Carbon::parse($attendance->time)->diffInMinutes(Carbon::parse($educationDay->time_in));
                     $lateComers[] = [
                         'id' => $student->id,
                         'name' => $student->name,
@@ -158,14 +160,19 @@ class StudentController extends Controller
         $day = $request->input('day', Carbon::today()->format('Y-m-d'));
         $perPage = $request->input('per_page', 10);
 
-        
-        $groups = Group::with([
+        $scheduledGroups = StudentScheduleDay::query()->where('date', $day)->pluck('group_id')->toArray();
+        $query = Group::with([
             'students.attendances' => function ($query) use ($day) {
                 $query->where('date', $day);
             }
-        ])->withCount('students')->where('faculty_id', $request->faculty_id)->get();
+        ])->withCount('students')
+            ->whereIn('group_id', $scheduledGroups);
 
-       
+        if (!empty($request->faculty_id)) {
+            $query->where('faculty_id', $request->faculty_id);
+        }
+        $groups = $query->get();
+
 
         $result = $groups->map(function ($group) use ($day) {
             $totalStudents = $group->students_count ?? 0;
@@ -177,6 +184,7 @@ class StudentController extends Controller
                     $absentStudents[] = [
                         'id' => $student->id,
                         'name' => $student->name,
+                        'hemis_id' => $student->hemis_id,
                     ];
                 }
             }
@@ -377,7 +385,7 @@ class StudentController extends Controller
 
             for ($date = $startOfMonth; $date->lte($endOfMonth); $date->addDay()) {
                 $day = $date->format('Y-m-d');
-                foreach ($group->students as $student) {    
+                foreach ($group->students as $student) {
                     $attendance = $student->attendances->where('date', $day)->first();
 
                     if ($attendance && $attendance->time > $attendance->user->time_in($day)) {
