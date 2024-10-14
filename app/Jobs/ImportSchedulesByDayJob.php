@@ -96,28 +96,28 @@ class ImportSchedulesByDayJob implements ShouldQueue
         }
     }
 
-    /**
-     * @param $schedule
-     * @return array
-     * @deprecated
-     */
-    private function scheduletodays($schedule): array
-    {
-        $weekstarttime = $schedule->startweektime;
-        $weekendtime = $schedule->endweektime;
-
-        $startDate = Carbon::parse($weekstarttime)->startOfDay();
-        $endDate = Carbon::parse($weekendtime)->endOfDay();
-        $dates = [];
-        while ($startDate->lessThanOrEqualTo($endDate)) {
-            $dates[] = [
-                'day' => $startDate->copy()->toDateString(),
-            ];
-            $startDate->addDay();
-        }
-        Log::info('DAtes: ' . count($dates) . 'days');
-        return $dates;
-    }
+//    /**
+//     * @param $schedule
+//     * @return array
+//     * @deprecated
+//     */
+//    private function scheduletodays($schedule): array
+//    {
+//        $weekstarttime = $schedule->startweektime;
+//        $weekendtime = $schedule->endweektime;
+//
+//        $startDate = Carbon::parse($weekstarttime)->startOfDay();
+//        $endDate = Carbon::parse($weekendtime)->endOfDay();
+//        $dates = [];
+//        while ($startDate->lessThanOrEqualTo($endDate)) {
+//            $dates[] = [
+//                'day' => $startDate->copy()->toDateString(),
+//            ];
+//            $startDate->addDay();
+//        }
+//        Log::info('DAtes: ' . count($dates) . 'days');
+//        return $dates;
+//    }
     function getFirstAndLastElement(array $data):array
     {
         usort($data, function ($a, $b) {
