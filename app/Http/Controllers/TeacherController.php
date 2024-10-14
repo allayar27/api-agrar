@@ -22,7 +22,7 @@ class TeacherController extends Controller
         $perPage = request('per_page', 20);
         $time_in = Carbon::parse("9:00");
 
-        $teachers = Teacher::whereHas('attendances', function ($query) use ($day, $time_in) {
+        $teachers = Teacher::query()->where('status','=',1)->whereHas('attendances', function ($query) use ($day, $time_in) {
             $query->where('date', $day)
                 ->where('type', 'in')
                 ->whereTime('time', '>', $time_in)->orderBy('time', 'DESC');
@@ -135,19 +135,19 @@ class TeacherController extends Controller
         ]);
 
         $day = $request->input('day') ?? Carbon::today()->format('Y-m-d');
-        $teachers = Teacher::query()->with('attendances')->where('kind', 'teacher')->get();
-        $employees = Teacher::query()->with('attendances')->where('kind', 'employee')->get();
+        $teachers = Teacher::query()->where('status','=',1)->with('attendances')->where('kind', 'teacher')->get();
+        $employees = Teacher::query()->where('status','=',1)->with('attendances')->where('kind', 'employee')->get();
         $employees_count = $employees->count();
         $teachers_count = $teachers->count();
-    
+
             $educationDay = EducationDays::query()
                 ->where('date', $day)
                 ->where('type', 'work_day')->first();
-  
+
             $employeeEducationDay = EmployeeEducationDays::query()
                 ->where('date', $day)
                 ->where('type', 'work_day')->first();
-        
+
 
         $late_teacher_comers = $educationDay->late_teachers ?? null;
         $comers_teacher  = $educationDay->come_teachers ?? null;
@@ -158,7 +158,7 @@ class TeacherController extends Controller
         $comers_employee = $employeeEducationDay->come_teachers ?? null;
         $come_employee_percent = $comers_employee ? ($comers_employee / $employees_count) * 100 : 0;
         $late_employee_percent = $comers_employee ? ($late_employee_comers/$comers_employee) * 100 : 0;
-        
+
         $employeeData = [
             'total_count' => $employees_count,
             'total_comers' => $comers_employee,
@@ -186,8 +186,8 @@ class TeacherController extends Controller
         $day = $request->input('day') ?? Carbon::today()->format('Y-m-d');
         $perPage = request('per_page', 20);
 
-        $teachers = Teacher::query()->where('kind', 'teacher')->get();
-        $employees = Teacher::query()->where('kind', 'employee')->get();
+        $teachers = Teacher::query()->where('status','=',1)->where('kind', 'teacher')->get();
+        $employees = Teacher::query()->where('status','=',1)->where('kind', 'employee')->get();
         $employeeIds = $employees->pluck('id');
         $teacherIds = $teachers->pluck('id');
 
@@ -343,14 +343,14 @@ class TeacherController extends Controller
         $month = $request->input('month') ?? Carbon::now()->format('Y-m');
         $startOfMonth = Carbon::createFromFormat('Y-m', $month)->startOfMonth()->toDateString();
         $endOfMonth = Carbon::createFromFormat('Y-m', $month)->endOfMonth()->toDateString();
-        
-        $teachers = Teacher::query()->with('attendances')->where('kind', 'teacher')->get();
-        $employees = Teacher::query()->with('attendances')->where('kind', 'employee')->get();
+
+        $teachers = Teacher::query()->where('status','=',1)->with('attendances')->where('kind', 'teacher')->get();
+        $employees = Teacher::query()->where('status','=',1)->with('attendances')->where('kind', 'employee')->get();
 
         $educationDays = EducationDays::query()
                     ->whereBetween('date', [$startOfMonth, $endOfMonth])
                     ->where('type', 'work_day')->get();
-        
+
         $employeeEducationDays = EmployeeEducationDays::query()
                     ->whereBetween('date', [$startOfMonth, $endOfMonth])
                     ->where('type', 'work_day')->get();
@@ -378,7 +378,7 @@ class TeacherController extends Controller
         }
 
         $teachersData = [
-            'total_teachers' => $teachers->count(), 
+            'total_teachers' => $teachers->count(),
             'total_study_days' => $study_teachers_days,
             'late' => $late_teachers_comers_count,
             'comers' => $total_teachers_comers_count,
@@ -407,8 +407,8 @@ class TeacherController extends Controller
         $startOfMonth = Carbon::createFromFormat('Y-m', $month)->startOfMonth()->toDateString();
         $endOfMonth = Carbon::createFromFormat('Y-m', $month)->endOfMonth()->toDateString();
 
-        $teachers = Teacher::query()->where('kind', 'teacher')->get();
-        $employees = Teacher::query()->where('kind', 'employee')->get();
+        $teachers = Teacher::query()->where('status','=',1)->where('kind', 'teacher')->get();
+        $employees = Teacher::query()->where('status','=',1)->where('kind', 'employee')->get();
 
         $educationDays = EducationDays::query()
             ->whereBetween('date', [$startOfMonth, $endOfMonth])
@@ -418,7 +418,7 @@ class TeacherController extends Controller
             ->whereBetween('date', [$startOfMonth, $endOfMonth])
             ->where('type', 'work_day')->get();
 
-        
+
 
         $study_teachers_days = 0;
         $late_teachers_comers_count = 0;
@@ -435,7 +435,7 @@ class TeacherController extends Controller
         $employees_come_percent = 0;
         $employee_days = [];
         $employee_data = [];
-        
+
         foreach ($educationDays as $educationDay) {
             if ($educationDay->come_teachers > 0.2 * $teachers->count()) {
                 $days = $educationDay->date;
@@ -455,7 +455,7 @@ class TeacherController extends Controller
                 ];
             }
 
-            
+
         }
 
         foreach ($employeeEducationDays as $educationDay) {
@@ -477,9 +477,9 @@ class TeacherController extends Controller
                 ];
             }
 
-            
+
         }
-        
+
         $teacherItems = [
             'total_teachers' => $teachers->count(),
             'study_days' => $study_teachers_days,
@@ -506,8 +506,8 @@ class TeacherController extends Controller
         $endOfMonth = Carbon::createFromFormat('Y-m', $month)->endOfMonth()->toDateString();
 
         $perPage = request('per_page', 20);
-        $teachers = Teacher::query()->with('attendances')->where('kind', 'teacher')->get();
-        $employees = Teacher::query()->with('attendances')->where('kind', 'employee')->get();
+        $teachers = Teacher::query()->where('status','=',1)->with('attendances')->where('kind', 'teacher')->get();
+        $employees = Teacher::query()->where('status','=',1)->with('attendances')->where('kind', 'employee')->get();
 
         $teachers_count = $teachers->count();
         $teacherIds = $teachers->pluck('id');
@@ -528,7 +528,7 @@ class TeacherController extends Controller
 
             $employee_study_days = 0;
             $employeesReport = [];
-            
+
             $attendances = Attendance::whereBetween('date', [$startOfMonth, $endOfMonth])
                                     ->where('kind', 'teacher')
                                     ->where('type', 'in')
@@ -544,7 +544,7 @@ class TeacherController extends Controller
             foreach ($attendances->groupBy('date') as $date => $dailyAttendances) {
                 $uniqueAttendances = $dailyAttendances->whereIn('attendanceable_id', $teacherIds)
                     ->unique('attendanceable_id');
-                
+
                 if (in_array($date, $educationDays) && $uniqueAttendances->count() > 0.2 * $teachers_count) {
                     $study_days++;
 
@@ -587,7 +587,7 @@ class TeacherController extends Controller
                         }
                     }
                 }
-                
+
             }
 
         foreach ($employeeAttendances->groupBy('date') as $date => $dailyAttendances) {
@@ -635,9 +635,9 @@ class TeacherController extends Controller
                     }
                 }
             }
-            
+
         }
-        
+
 
         $teachersData = collect(array_values($teachersReport));
         $employeesData = collect( array_values($employeesReport));

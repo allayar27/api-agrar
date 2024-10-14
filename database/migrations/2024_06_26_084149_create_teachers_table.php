@@ -22,6 +22,7 @@ return new class extends Migration
             $table->string('thirdname')->nullable();
             $table->foreignIdFor(TeacherSchedule::class);
             $table->enum('kind',['employee','teacher','other','administrative' ]);
+            $table->integer('status')->default(0);
             $table->timestamps();
         });
     }

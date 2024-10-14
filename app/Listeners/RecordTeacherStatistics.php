@@ -35,7 +35,7 @@ class RecordTeacherStatistics
             if ($attendance || $device->building['type'] != 'residential') {
                 //     return;
                 // }
-                $teachers = Teacher::pluck('id');
+                $teachers = Teacher::query()->where('status','=',1)->pluck('id');
 
                 $come_teachers_count = $this->comers('teacher', $teachers, $attendance);
                 $come_employees_count = $this->comers('employee', $teachers, $attendance);
@@ -46,7 +46,7 @@ class RecordTeacherStatistics
                 EducationDays::query()->updateOrCreate(
                     ['date' => $attendance->date],
                     [
-                        'all_teachers' => Teacher::query()->where('kind', 'teacher')->count(),
+                        'all_teachers' => Teacher::query()->where('status','=',1)->where('kind', 'teacher')->count(),
                         'come_teachers' => $come_teachers_count,
                         'late_teachers' => $late_teachers_count,
                     ]
@@ -54,7 +54,7 @@ class RecordTeacherStatistics
                 EmployeeEducationDays::query()->updateOrCreate(
                     ['date' => $attendance->date],
                     [
-                        'all_teachers' => Teacher::where('kind', 'employee')->count(),
+                        'all_teachers' => Teacher::query()->where('status','=',1)->where('kind', '=','employee')->count(),
                         'come_teachers' => $come_employees_count,
                         'late_teachers' => $late_employees_count,
                     ]

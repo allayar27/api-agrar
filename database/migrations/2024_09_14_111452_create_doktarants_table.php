@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('firstname')->nullable();
             $table->string('secondname')->nullable();
             $table->string('thirdname')->nullable();
+            $table->integer('status')->default(0);
             $table->timestamps();
         });
     }

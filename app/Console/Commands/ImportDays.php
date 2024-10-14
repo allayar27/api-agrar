@@ -34,16 +34,16 @@ class ImportDays extends Command
         Artisan::call('app:daily-student-schedule');
         $groups = Group::all();
         sleep(15);
-        $startDate = Carbon::create(2024, 9, 16); // 16-sentabr
-        $endDate = Carbon::create(2024, 10, 16); // 16-oktabr
-
-        $dates = [];
-
-        for ($date = $startDate; $date->lte($endDate); $date->addDay()) {
-            $dates[] = $date->format('Y-m-d');
-        }
-        foreach ($dates as $date) {
-            $today = $date;
+//        $startDate = Carbon::create(2024, 9, 16);
+//        $endDate = Carbon::create(2024, 10, 16);
+//
+//        $dates = [];
+//
+//        for ($date = $startDate; $date->lte($endDate); $date->addDay()) {
+//            $dates[] = $date->format('Y-m-d');
+//        }
+//        foreach ($dates as $date) {
+            $today = Carbon::today()->format('Y-m-d');
             $schedule = StudentSchedule::query()->whereDate('startweektime', '<=', $today)
                 ->whereDate('endweektime', '>=', $today)->first();
             if ($schedule) {
@@ -54,6 +54,6 @@ class ImportDays extends Command
             } else {
                 Log::info("Schedules not found: $today");
             }
-        }
+//        }
     }
 }
