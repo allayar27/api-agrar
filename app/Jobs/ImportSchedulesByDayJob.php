@@ -4,7 +4,6 @@ namespace App\Jobs;
 
 use App\Helpers\ErrorAddHelper;
 use App\Models\Group;
-use App\Models\StudentSchedule;
 use App\Models\StudentScheduleDay;
 use App\Services\ScheduleService;
 use Carbon\Carbon;
@@ -46,14 +45,13 @@ class ImportSchedulesByDayJob implements ShouldQueue
     {
         try {
             $group = Group::query()->findOrFail($this->groupId);
-            $schedule = StudentSchedule::query()->findOrFail($this->scheduleId);
             $day = $this->day;
             $day = Carbon::parse($day);
             $start = Carbon::parse($day)->startOfDay();
             $end = Carbon::parse($day)->endOfDay();
             $startTime = $start->timestamp;
             $endTime = $end->timestamp;
-            $this->fetchScheduleData(groupId: $group->hemis_id, startOfDay: $startTime, endOfDay: $endTime, scheduleId: $schedule->id);
+            $this->fetchScheduleData(groupId: $group->hemis_id, startOfDay: $startTime, endOfDay: $endTime, scheduleId: $this->scheduleId);
         } catch (Throwable $th) {
             ErrorAddHelper::logException($th);
         }
@@ -66,7 +64,7 @@ class ImportSchedulesByDayJob implements ShouldQueue
      * @param int $scheduleId
      * @return void
      */
-    private function fetchScheduleData(?int $groupId, string $startOfDay, string $endOfDay, int $scheduleId):void
+    private function fetchScheduleData(?int $groupId, string $startOfDay, string $endOfDay, int $scheduleId): void
     {
         $response = Http::withHeaders([
             'accept' => 'application/json',
@@ -85,7 +83,7 @@ class ImportSchedulesByDayJob implements ShouldQueue
                         'time_out' => $last['lessonPair']['end_time'],
                         'group_id' => $this->groupId,
                         'day' => Carbon::createFromTimestamp($startOfDay)->format('l'),
-                        'date' => Carbon::createFromTimestamp($startOfDay)->format('Y-m-d'),
+                        'date' => Carbon::createFromTimestamp($this->day)->format('Y-m-d'),
                     ]);
                 }
 
@@ -96,29 +94,7 @@ class ImportSchedulesByDayJob implements ShouldQueue
         }
     }
 
-//    /**
-//     * @param $schedule
-//     * @return array
-//     * @deprecated
-//     */
-//    private function scheduletodays($schedule): array
-//    {
-//        $weekstarttime = $schedule->startweektime;
-//        $weekendtime = $schedule->endweektime;
-//
-//        $startDate = Carbon::parse($weekstarttime)->startOfDay();
-//        $endDate = Carbon::parse($weekendtime)->endOfDay();
-//        $dates = [];
-//        while ($startDate->lessThanOrEqualTo($endDate)) {
-//            $dates[] = [
-//                'day' => $startDate->copy()->toDateString(),
-//            ];
-//            $startDate->addDay();
-//        }
-//        Log::info('DAtes: ' . count($dates) . 'days');
-//        return $dates;
-//    }
-    function getFirstAndLastElement(array $data):array
+    function getFirstAndLastElement(array $data): array
     {
         usort($data, function ($a, $b) {
             return strtotime($a['lessonPair']['start_time']) - strtotime($b['lessonPair']['start_time']);
@@ -130,7 +106,7 @@ class ImportSchedulesByDayJob implements ShouldQueue
      * @param Throwable $exception
      * @return void
      */
-    public function failed(Throwable $exception):void
+    public function failed(Throwable $exception): void
     {
         Log::error('Job failed for group ID: ' . $this->groupId, ['error' => $exception->getMessage()]);
     }
