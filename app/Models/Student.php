@@ -18,7 +18,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 class Student extends Model
 {
     use HasFactory;
- 
+
     protected $fillable = [
         'hemis_id',
         'name',
@@ -26,7 +26,8 @@ class Student extends Model
         'secondname',
         'thirdname',
         'group_id',
-        'faculty_id'
+        'faculty_id',
+        'status'
     ];
 
     public function attendances()

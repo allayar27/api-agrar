@@ -38,6 +38,9 @@ class AddUserToDatabase implements ShouldQueue
             if ($parts[1] == 'student') {
                 $student = Student::query()->where('hemis_id', '=', $user->hemis_id)->first();
                 if ($student) {
+                    $student->update([
+                        'status' =>1
+                    ]);
                     $user->delete();
                 }
             }
