@@ -47,7 +47,7 @@ class AddUserToDatabase implements ShouldQueue
             if ($parts[1] == 'employee' || $parts[1] == 'teacher') {
                 $teacher = Teacher::query()->where('hemis_id', '=', $user->hemis_id)->first();
                 if (!$teacher) {
-                    $teacher = Teacher::query()->create([
+                    $teacher = Teacher::query()->updateOrCreate([
                         'hemis_id' => $user->hemis_id,
                         'name' => $user->name . ' ' . $user->surname,
                         'firstname' => $user->name,
@@ -64,7 +64,7 @@ class AddUserToDatabase implements ShouldQueue
                 $user->delete();
             }
             if ($parts[1] == 'doctorant') {
-                Doktarant::query()->create([
+                Doktarant::query()->updateOrCreate([
                     'hemis_id' => $user->hemis_id,
                     'name' => $user->name . ' ' . $user->surname,
                     'firstname' => $user->name,
