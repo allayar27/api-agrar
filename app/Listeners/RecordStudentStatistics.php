@@ -33,7 +33,7 @@ class RecordStudentStatistics
             $attendance = $event->attendance;
             $student = Student::findOrFail($attendance->user->id);
             $group = $attendance->group;
-            $groupIds = $group->students()->pluck('id');
+            $groupIds = $group->students()->where('status','=',1)->pluck('id');
             $facultyId = $attendance->faculty_id;
             $today = $attendance->date;
             $device = Device::query()->with('building')->findOrFail($attendance->device_id);
@@ -86,7 +86,7 @@ class RecordStudentStatistics
                         'day' => $today,
                     ],
                     [
-                        'all_students' => Student::query()->where('faculty_id', '=', $facultyId)->count(),
+                        'all_students' => Student::query()->where('status','=',1)->where('faculty_id', '=', $facultyId)->count(),
                         'come_students' => $come_students_count_faculty,
                         'late_students' => $late_students_count_faculty,
                     ]

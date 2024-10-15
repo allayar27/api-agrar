@@ -3,24 +3,17 @@
 namespace App\Http\Controllers;
 
 use App\Exports\GroupmonthReport;
-use App\Exports\GroupmonthReportExport;
-use Carbon\Carbon;
-use App\Models\Group;
+use App\Http\Requests\GroupsGetRequest;
 use App\Models\Faculty;
-use App\Models\Student;
+use App\Models\Group;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use App\Models\StudentScheduleDay;
-use App\Http\Requests\GroupsGetRequest;
-use App\Models\Attendance;
-use App\Models\Building;
-use App\Models\Device;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Maatwebsite\Excel\Facades\Excel;
 
 class GroupController extends Controller
 {
-    public function allGroups(GroupsGetRequest $request):JsonResponse
+    public function allGroups(GroupsGetRequest $request): JsonResponse
     {
         $data = $request->validated();
         $day = request('day') ? request('day') : Carbon::today()->format('Y-m-d');
@@ -28,8 +21,10 @@ class GroupController extends Controller
 
         $faculty = Faculty::with(['groups' => function ($query) use ($day) {
             $query->with(['groupEducationDays' => function ($query) use ($day) {
-                $query->where('day', $day);
-            }])->withCount('students');
+                $query->where('day', '=', $day);
+            }])->withCount(['students' => function ($query) {
+                $query->where('status', '=', 1);
+            }]);
         }])->findOrFail($data['faculty_id']);
 
         $groupsData = $faculty->groups->map(function ($group) use ($day) {
@@ -64,14 +59,19 @@ class GroupController extends Controller
     public function getGroupById($id)
     {
         $today = request()->input('day') ?? Carbon::today()->format('Y-m-d');
-        $group = Group::query()->with(['attendances'])->withCount('students')->findOrFail($id);
-        
+        $group = Group::query()->with(['attendances'])
+            ->with(['students' => function ($query) {
+                $query->where('status', '=', 1);
+            }])->withCount(['students' => function ($query)  {
+                $query->where('status','=', 1);
+            }])->findOrFail($id);
+
         $data = $group->students->map(function ($student) use ($group, $today) {
 
             $attendances = $student->attendances
-                        ->where('date', $today)
-                        ->where('kind', 'student')
-                        ->whereNotIn('device_id', [21, 22, 23, 24]);
+                ->where('date', $today)
+                ->where('kind', 'student')
+                ->whereNotIn('device_id', [21, 22, 23, 24]);
             $result = [
                 'group_id' => $group->id,
                 'group_name' => $group->name,
@@ -82,7 +82,7 @@ class GroupController extends Controller
                 'leave_time' => null,
                 'late_time' => null,
             ];
- 
+
             $arrival = $attendances->firstWhere('type', 'in');
             $leave = $attendances->firstWhere('type', 'out');
             $time_in = Carbon::parse('8:30');
@@ -95,7 +95,7 @@ class GroupController extends Controller
                     $minutes = $late % 60;
                     $result['late_time'] = sprintf('%02d:%02d:00', $hours, $minutes);
                 }
-            } 
+            }
             if ($leave) {
                 $result['leave_time'] = $leave->time;
             }
@@ -106,7 +106,7 @@ class GroupController extends Controller
             'success' => true,
             'data' => $data
         ]);
-        
+
     }
 
     public function monthReport(Request $request)
@@ -122,17 +122,17 @@ class GroupController extends Controller
         $perPage = $request->input('per_page', 10);
 
         $groups = Group::query()->with(['groupeducationdays' => function ($query) use ($startOfMonth, $endOfMonth) {
-                        $query->whereBetween('day', [$startOfMonth, $endOfMonth]);
-                    },
-                    'attendances' => function ($query) use ($startOfMonth, $endOfMonth) {
-                        $query->whereBetween('date', [$startOfMonth, $endOfMonth]);
-                    }
+            $query->whereBetween('day', [$startOfMonth, $endOfMonth]);
+        },
+            'attendances' => function ($query) use ($startOfMonth, $endOfMonth) {
+                $query->whereBetween('date', [$startOfMonth, $endOfMonth]);
+            }
         ])->withCount('students')->where('faculty_id', $valid['faculty_id'])->get();
 
         $groupsData = $groups->map(function ($group) use ($startOfMonth, $endOfMonth) {
             $groupEducationDays = $group->groupeducationdays->whereBetween('day', [$startOfMonth, $endOfMonth]);
             $studentIds = $group->students()->pluck('id');
-            
+
             $attendances = $group->attendances->whereBetween('date', [$startOfMonth, $endOfMonth])
                 ->where('kind', 'student')
                 ->where('type', 'in')
@@ -143,38 +143,38 @@ class GroupController extends Controller
             $late_comers_count = 0;
             $total_comes_count = null;
 
-        foreach ($attendances as $date => $dailyAttendances) {
+            foreach ($attendances as $date => $dailyAttendances) {
 
-            $uniqueAttendances = $dailyAttendances->whereIn('attendanceable_id', $studentIds)
-                ->unique('attendanceable_id');
+                $uniqueAttendances = $dailyAttendances->whereIn('attendanceable_id', $studentIds)
+                    ->unique('attendanceable_id');
 
-            if ($uniqueAttendances->count() > 0.2 * $totalStudents) {
-                $study_days++;
-                $late_comers = 0;
-                $total_comes_count += $uniqueAttendances->count();
+                if ($uniqueAttendances->count() > 0.2 * $totalStudents) {
+                    $study_days++;
+                    $late_comers = 0;
+                    $total_comes_count += $uniqueAttendances->count();
 
-                foreach ($groupEducationDays as $groupEducationDay) {
-                    if ($groupEducationDay->day == $date) {
-                        $late_comers = $groupEducationDay->late_students;
-                        $late_comers_count += $late_comers; 
-                        break;
+                    foreach ($groupEducationDays as $groupEducationDay) {
+                        if ($groupEducationDay->day == $date) {
+                            $late_comers = $groupEducationDay->late_students;
+                            $late_comers_count += $late_comers;
+                            break;
+                        }
                     }
-                }
-                
-            }
-        }
 
-        return [
-            'group_id' => $group->id,
-            'group_name' => $group->name,
-            'total_students' => $group->students_count,
-            'total_study_days' => $study_days,
-            'late_percent' => $late_comers_count > 0 ? ($late_comers_count / $total_comes_count) * 100 : 0,
-            'come_percent' => $study_days ? ($total_comes_count / ($study_days * $group->students_count)) * 100 : 0,
-        ];
-    });
- 
-     $currentPage = LengthAwarePaginator::resolveCurrentPage();
+                }
+            }
+
+            return [
+                'group_id' => $group->id,
+                'group_name' => $group->name,
+                'total_students' => $group->students_count,
+                'total_study_days' => $study_days,
+                'late_percent' => $late_comers_count > 0 ? ($late_comers_count / $total_comes_count) * 100 : 0,
+                'come_percent' => $study_days ? ($total_comes_count / ($study_days * $group->students_count)) * 100 : 0,
+            ];
+        });
+
+        $currentPage = LengthAwarePaginator::resolveCurrentPage();
         $paginatedGroups = new LengthAwarePaginator(
             $groupsData->forPage($currentPage, $perPage)->values(),
             $groupsData->count(),
@@ -203,14 +203,14 @@ class GroupController extends Controller
         $endOfMonth = Carbon::createFromFormat('Y-m', $request['month'])->endOfMonth()->toDateString();
 
         $groups = Group::query()
-                ->with(['groupeducationdays', 'attendances', 'students'])
-                ->withCount('students')
-                ->where('id', $request['group_id'])->get();
+            ->with(['groupeducationdays', 'attendances', 'students'])
+            ->withCount('students')
+            ->where('id', $request['group_id'])->get();
 
-        $data = $groups->map( function ($group) use ($startOfMonth, $endOfMonth) {
+        $data = $groups->map(function ($group) use ($startOfMonth, $endOfMonth) {
             $groupEducationDays = $group->groupeducationdays->whereBetween('day', [$startOfMonth, $endOfMonth]);
             $studentIds = $group->students->pluck('id');
-            
+
             $attendances = $group->attendances->whereBetween('date', [$startOfMonth, $endOfMonth])
                 ->where('kind', 'student')
                 ->where('type', 'in')
@@ -253,7 +253,7 @@ class GroupController extends Controller
                 'total_students' => $totalStudents,
                 'study_days' => $studentAttendancePerDay
             ];
-            
+
         });
 
         return response()->json([
@@ -272,7 +272,7 @@ class GroupController extends Controller
 
         $startOfMonth = Carbon::createFromFormat('Y-m', $request['month'])->startOfMonth()->toDateString();
         $endOfMonth = Carbon::createFromFormat('Y-m', $request['month'])->endOfMonth()->toDateString();
-        
+
         $groups = Group::query()
             ->with(['groupeducationdays', 'attendances', 'students'])
             ->withCount('students')
@@ -281,7 +281,7 @@ class GroupController extends Controller
         $result = $groups->map(function ($group) use ($startOfMonth, $endOfMonth) {
             $studentIds = $group->students->pluck('id');
             $educationDays = $group->groupeducationdays->whereBetween('day', [$startOfMonth, $endOfMonth])->pluck('day')->toArray();
-            
+
             $totalStudents = $group->students_count;
             $study_days = 0;
 
@@ -296,7 +296,7 @@ class GroupController extends Controller
             foreach ($attendances as $date => $dailyAttendances) {
                 $uniqueAttendances = $dailyAttendances->whereIn('attendanceable_id', $studentIds)
                     ->unique('attendanceable_id');
-            
+
                 if (in_array($date, $educationDays) && $uniqueAttendances->count() > 0.2 * $totalStudents) {
                     $study_days++;
 
@@ -315,29 +315,28 @@ class GroupController extends Controller
                         }
 
                         $attendance = $student->attendances->where('date', $date)->where('type', 'in')->first();
-                        
+
                         if ($attendance) {
                             $studentReports[$studentId]['attended_count']++;
-    
-                            if ($attendance->time > $attendance->user->time_in($date)) {                 
+
+                            if ($attendance->time > $attendance->user->time_in($date)) {
                                 $studentReports[$studentId]['late_days'][] = [
                                     'date' => $date,
                                     'late_time' => $attendance->time,
                                 ];
                             }
-                        }
-                        else {
+                        } else {
                             $studentReports[$studentId]['absents_count']++;
                             $studentReports[$studentId]['absent_days'][] = $date;
                         }
                     }
                 }
             }
-    
+
             return [
                 'group_name' => $group->name,
                 'total_students' => $totalStudents,
-                'total_study_days' => $study_days, 
+                'total_study_days' => $study_days,
                 'student_reports' => array_values($studentReports),
             ];
 
@@ -393,8 +392,6 @@ class GroupController extends Controller
 // //            'last_page' => $paginatedGroups->lastPage(),
 // //            'data' => $paginatedGroups->items(),
 // //        ]);
-
-
 
 
 //         //$groupDetails = Group::query()->where('faculty_id', $id)->get();
