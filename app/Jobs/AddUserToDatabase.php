@@ -11,6 +11,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 
 class AddUserToDatabase implements ShouldQueue
 {
@@ -39,10 +40,13 @@ class AddUserToDatabase implements ShouldQueue
                 $student = Student::query()->where('hemis_id', '=', $user->hemis_id)->first();
                 if ($student) {
                     $student->update([
-                        'status' =>1
+                        'status' => 1
                     ]);
                     $user->delete();
+                }else{
+                    Log::info($student->id);
                 }
+
             }
             if ($parts[1] == 'employee' || $parts[1] == 'teacher') {
                 $teacher = Teacher::query()->where('hemis_id', '=', $user->hemis_id)->first();
