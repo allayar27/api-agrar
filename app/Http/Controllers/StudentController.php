@@ -22,7 +22,7 @@ class StudentController extends Controller
     public function allStudents(Request $request): JsonResponse
     {
         $day = $request->input('day') ?? Carbon::today();
-        $query = Student::query();
+        $query = Student::query()->where('status','=',1);
         if ($request->has("search")) {
             $search = $request->input('search');
             $query->whereAny([
@@ -232,7 +232,7 @@ class StudentController extends Controller
                 'group',
                 'faculty'
             ])
-            ->findOrFail($id);
+            ->where('status','=',1)->findOrFail($id);
 
         // $lastAttendance = $student->attendances->first();
         // if(!$lastAttendance){
@@ -281,8 +281,8 @@ class StudentController extends Controller
         $daysInMonth = Carbon::parse($month)->daysInMonth;
         $startOfMonth = Carbon::parse($month)->startOfMonth();
         $endOfMonth = Carbon::parse($month)->endOfMonth();
-
-        $allStudents = Student::count();
+        // so mna jerde kosp kettim status 1 ge teng bogandi
+        $allStudents = Student::where('status','=',1)->count();
 
         $statistics = collect();
 

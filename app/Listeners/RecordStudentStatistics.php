@@ -28,7 +28,7 @@ class RecordStudentStatistics
      * Handle the event.
      */
     public function handle(StudentAttendanceCreated $event): void
-    {
+    { 
         try {
             $attendance = $event->attendance;
             $student = Student::findOrFail($attendance->user->id);

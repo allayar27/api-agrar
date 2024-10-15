@@ -21,7 +21,7 @@ class MainController extends Controller
     public function index():JsonResponse
     {
         $day = request('day') ? request('day') : Carbon::today()->format('Y-m-d');
-        $students = Student::count();
+        $students = Student::where('status','=',1)->count();
         $faculties = Faculty::with([
             'facultyEducationDays' => function ($query) use ($day) {
                 $query->where('day', $day);
