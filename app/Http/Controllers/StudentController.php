@@ -162,7 +162,7 @@ class StudentController extends Controller
 
         $scheduledGroups = StudentScheduleDay::query()->where('date', $day)->pluck('group_id')->toArray();
 
-        $query = Group::with([
+        $query = Group::query()->whereIn('id',$scheduledGroups)->with([
             'students' => function ($query) use ($day) {
                 $query->where('status', 1)
                     ->with(['attendances' => function ($query) use ($day) {
@@ -170,7 +170,6 @@ class StudentController extends Controller
                     }]);
             }
         ])->withCount('students')
-            ->whereIn('group_id', $scheduledGroups);
 
         if (!empty($request->faculty_id)) {
             $query->where('faculty_id', $request->faculty_id);
