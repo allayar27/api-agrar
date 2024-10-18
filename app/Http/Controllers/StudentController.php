@@ -99,7 +99,7 @@ class StudentController extends Controller
         ])->withCount('students')->where('faculty_id', $request->faculty_id)->get();
         $result = $groups->map(function ($group) use ($day) {
             $scheduleDay = $group->scheduleDays->first();
-            if ($scheduleDay && isset($scheduleDay['time_in']) ) {
+            if (!$scheduleDay || !isset($scheduleDay->time_in)) {
                 return null;
             }
             $educationDay = $group->groupEducationDays->first();
