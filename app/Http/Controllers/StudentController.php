@@ -111,7 +111,7 @@ class StudentController extends Controller
             foreach ($group->students as $student) {
                 $attendance = $student->attendances->first();
                 if ($attendance &&  $attendance->time > $scheduleDay['time_in']) {
-                    $late = Carbon::parse($attendance->time)->diffInMinutes(Carbon::parse($educationDay->time_in));
+                    $late = Carbon::parse($attendance->time)->diffInMinutes(Carbon::parse($scheduleDay['time_in']));
                     $lateComers[] = [
                         'id' => $student->id,
                         'name' => $student->name,
