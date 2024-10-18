@@ -97,7 +97,7 @@ class StudentController extends Controller
                 $query->where('date', $day);
             }
         ])->withCount('students')->where('faculty_id', $request->faculty_id)->get();
-
+        dd($groups);
         $result = $groups->map(function ($group) use ($day) {
             $scheduleDay = $group->scheduleDays->first();
             if (!$scheduleDay) {
