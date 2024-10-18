@@ -35,15 +35,15 @@ class AddUserToDatabase implements ShouldQueue
             ->get();
         foreach ($users as $user) {
             $parts = explode('/', $user->PersonGroup);
-            if ($parts[1] == 'student') {
-                $student = Student::query()->where('hemis_id', '=', $user->hemis_id)->first();
-                if ($student) {
-                    $student->update([
-                        'status' => 1
-                    ]);
-                    $user->delete();
-                }
-            }
+//            if ($parts[1] == 'student') {
+//                $student = Student::query()->where('hemis_id', '=', $user->hemis_id)->first();
+//                if ($student) {
+//                    $student->update([
+//                        'status' => 1
+//                    ]);
+//                    $user->delete();
+//                }
+//            }
             if ($parts[1] == 'employee' || $parts[1] == 'teacher') {
                 $teacher = Teacher::query()->where('hemis_id', '=', $user->hemis_id)->first();
                 if (!$teacher) {

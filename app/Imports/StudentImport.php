@@ -17,16 +17,9 @@ class StudentImport implements ToCollection
     */
     public function collection(Collection $collection)
     {
-        $data = [];
         $teachers = Teacher::all();
         foreach ($teachers as $teacher) {
             $teacher->update([
-                'status' => 0
-            ]);
-        }
-        $students = Student::all();
-        foreach ($students as $student) {
-            $student->update([
                 'status' => 0
             ]);
         }
