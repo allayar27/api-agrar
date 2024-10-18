@@ -99,8 +99,8 @@ class StudentController extends Controller
         ])->withCount('students')->where('faculty_id', $request->faculty_id)->get();
 
         $result = $groups->map(function ($group) use ($day) {
-            $educationDay = $group->scheduleDays->first();
-            if (!$educationDay) {
+            $scheduleDay = $group->scheduleDays->first();
+            if (!$scheduleDay) {
                 return null;
             }
             $educationDay = $group->groupEducationDays->first();
@@ -111,7 +111,7 @@ class StudentController extends Controller
 
             foreach ($group->students as $student) {
                 $attendance = $student->attendances->first();
-                if ($attendance && $attendance->time > $educationDay->time_in) {
+                if ($attendance && $attendance->time > $scheduleDay->time_in) {
                     $late = Carbon::parse($attendance->time)->diffInMinutes(Carbon::parse($educationDay->time_in));
                     $lateComers[] = [
                         'id' => $student->id,
