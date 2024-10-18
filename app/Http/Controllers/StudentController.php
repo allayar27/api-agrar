@@ -169,7 +169,7 @@ class StudentController extends Controller
                         $query->where('date', $day);
                     }]);
             }
-        ])->withCount('students')
+        ])->withCount('students');
 
         if (!empty($request->faculty_id)) {
             $query->where('faculty_id', $request->faculty_id);
