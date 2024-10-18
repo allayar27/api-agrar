@@ -5,6 +5,7 @@ namespace App\Imports;
 use App\Jobs\AddImportedUser;
 use App\Jobs\RunCommands;
 use App\Models\ImportStudent;
+use App\Models\Student;
 use App\Models\Teacher;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\ToCollection;
@@ -20,6 +21,12 @@ class StudentImport implements ToCollection
         $teachers = Teacher::all();
         foreach ($teachers as $teacher) {
             $teacher->update([
+                'status' => 0
+            ]);
+        }
+        $students = Student::all();
+        foreach ($students as $student) {
+            $student->update([
                 'status' => 0
             ]);
         }
