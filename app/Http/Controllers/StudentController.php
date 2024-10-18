@@ -102,7 +102,6 @@ class StudentController extends Controller
             if (!$scheduleDay) {
                 return null;
             }
-            dd($scheduleDay['time_in']);
             $educationDay = $group->groupEducationDays->first();
             $totalStudents = $group->students_count ?? 0;
             $presentStudents = $educationDay->come_students ?? 0;
