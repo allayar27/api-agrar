@@ -97,12 +97,13 @@ class StudentController extends Controller
                 $query->where('date', $day);
             }
         ])->withCount('students')->where('faculty_id', $request->faculty_id)->take(1)->get();
-        dd($groups);
+//        dd($groups);
         $result = $groups->map(function ($group) use ($day) {
             $scheduleDay = $group->scheduleDays->first();
             if (!$scheduleDay) {
                 return null;
             }
+            dd($scheduleDay);
             $educationDay = $group->groupEducationDays->first();
             $totalStudents = $group->students_count ?? 0;
             $presentStudents = $educationDay->come_students ?? 0;
