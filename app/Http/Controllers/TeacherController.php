@@ -120,6 +120,7 @@ class TeacherController extends Controller
                 DB::raw('((late_teachers / all_teachers) * 100) as late_percentage')
             )
             ->whereBetween('date', [$startDate, $endDate])
+            ->havingRaw('(come_teachers / all_teachers) >= 0.20')
             ->orderBy('date', 'Desc')
             ->get();
 
