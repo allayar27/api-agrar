@@ -161,9 +161,13 @@ class StudentController extends Controller
         $perPage = $request->input('per_page', 10);
 
         $scheduledGroups = StudentScheduleDay::query()->where('date', $day)->pluck('group_id')->toArray();
+
         $query = Group::with([
-            'students.attendances' => function ($query) use ($day) {
-                $query->where('date', $day);
+            'students' => function ($query) use ($day) {
+                $query->where('status', 1)
+                    ->with(['attendances' => function ($query) use ($day) {
+                        $query->where('date', $day);
+                    }]);
             }
         ])->withCount('students')
             ->whereIn('group_id', $scheduledGroups);
@@ -171,10 +175,10 @@ class StudentController extends Controller
         if (!empty($request->faculty_id)) {
             $query->where('faculty_id', $request->faculty_id);
         }
+
         $groups = $query->get();
 
-
-        $result = $groups->map(function ($group) use ($day) {
+        $result = $groups->map(function ($group) {
             $totalStudents = $group->students_count ?? 0;
             $absentStudents = [];
 
@@ -218,6 +222,7 @@ class StudentController extends Controller
             ],
             'data' => $pagedResult->items(),
         ]);
+
 
     }
 
