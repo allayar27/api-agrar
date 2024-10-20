@@ -34,8 +34,8 @@ class ImportDays extends Command
         Artisan::call('app:daily-student-schedule');
         $groups = Group::all();
         sleep(15);
-        $startDate = Carbon::create(2024, 9, 16);
-        $endDate = Carbon::create(2024, 10, 16);
+        $startDate = Carbon::create(2024, 10, 19);
+        $endDate = Carbon::create(2024, 10, 17);
 
         $dates = [];
 
