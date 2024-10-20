@@ -35,7 +35,7 @@ class ImportDays extends Command
         $groups = Group::all();
         sleep(15);
         $startDate = Carbon::create(2024, 10, 21);
-        $endDate = Carbon::create(2024, 10, 22);
+        $endDate = Carbon::create(2024, 10, 28);
 
         $dates = [];
 
