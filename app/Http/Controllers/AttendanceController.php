@@ -66,7 +66,7 @@ class AttendanceController extends Controller
             if ($data['PersonGroup'] == 'doctoront') {
                 $doctorant = Doktarant::query()->where('hemis_id', '=', $id)->first();
                 if ($doctorant) {
-                    $attendance = $this->createAttendance($doctorant, $data, 'other');
+                    $this->createAttendance($doctorant, $data, 'other');
                 } else {
                     $this->addNotFound(hemis_id: $id, name: $data['FirstName'] . " " . $data['LastName'], PersonGroup: $data['PersonGroup'], date_time: $data['AccessDateandTime'], device_name: $data['DeviceName']);
                 }
@@ -94,7 +94,7 @@ class AttendanceController extends Controller
             'date_time' => $data['AccessDate'] . ' ' . $data['AccessTime'],
             'kind' => $kind,
             'device_id' => $device->id,
-        ]; 
+        ];
 
         if ($kind === 'student' && $entity->group && $entity->group->faculty) {
             $attendanceData['group_id'] = $entity->group->id;
@@ -223,13 +223,12 @@ class AttendanceController extends Controller
             'hemis_id' => $hemis_id,
             'full_name' => $name,
             'PersonGroup' => $PersonGroup,
-            'date_time' => $date_time, 
+            'date_time' => $date_time,
             'device_name' => $device_name,
         ]);
-        
-        \Log::info('Existing userLogs: ' . ($userLog ? 'Yes' : 'No'));
-        $this->sendAttendanceNotification($userLog);
-        
+
+//        $this->sendAttendanceNotification($userLog);
+
     }
 
     private function sendAttendanceNotification(UsersLog $usersLogs)

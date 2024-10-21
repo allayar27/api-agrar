@@ -116,7 +116,7 @@ class StudentController extends Controller
                         'id' => $student->id,
                         'name' => $student->name,
                         'time' => $attendance->time,
-                        'late' => Carbon::parse($late)->format('H:i:s')
+                        'late' => Carbon::parse($late)->format('i:s')
                     ];
                 }
             }
