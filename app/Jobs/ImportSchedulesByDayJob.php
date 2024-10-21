@@ -51,7 +51,6 @@ class ImportSchedulesByDayJob implements ShouldQueue
             $end = Carbon::parse($day)->endOfDay();
             $startTime = $start->timestamp;
             $endTime = $end->timestamp;
-            Log::info($startTime." ".$endTime);
             $this->fetchScheduleData(groupId: $group->hemis_id, startOfDay: $startTime, endOfDay: $endTime, scheduleId: $this->scheduleId);
         } catch (Throwable $th) {
             ErrorAddHelper::logException($th);
@@ -84,7 +83,7 @@ class ImportSchedulesByDayJob implements ShouldQueue
                         'time_out' => $last['lessonPair']['end_time'],
                         'group_id' => $this->groupId,
                         'day' => Carbon::createFromTimestamp($startOfDay)->format('l'),
-                        'date' => Carbon::createFromTimestamp($this->day)->format('Y-m-d'),
+                        'date' => Carbon::createFromTimestamp($startOfDay)->format('Y-m-d'),
                     ]);
                 }
 

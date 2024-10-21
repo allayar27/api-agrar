@@ -41,6 +41,8 @@ class ImportDays extends Command
 
         for ($date = $startDate; $date->lte($endDate); $date->addDay()) {
             $dates[] = $date->format('Y-m-d');
+            $day = $date->format('Y-m-d');
+            Log::info($day);
         }
         foreach ($dates as $date) {
 //            $today = Carbon::today()->format('Y-m-d');
