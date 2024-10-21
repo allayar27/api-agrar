@@ -82,8 +82,8 @@ class ImportSchedulesByDayJob implements ShouldQueue
                         'time_in' => $result[0]['lessonPair']['start_time'],
                         'time_out' => $last['lessonPair']['end_time'],
                         'group_id' => $this->groupId,
-                        'day' => Carbon::parse($startOfDay)->format('l'),
-                        'date' => Carbon::parse($startOfDay)->format('Y-m-d'),
+                        'day' => Carbon::parse($result['lesson_date'])->format('l'),
+                        'date' => Carbon::parse($result['lesson_date'])->format('Y-m-d'),
                     ]);
                 }
 

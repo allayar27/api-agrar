@@ -16,7 +16,8 @@ class ScheduleService
     {
         ScheduleGroupNotFound::query()->firstOrCreate([
             'day' => $day,
-            'group_id' => $groupId
+            'group_id' => $groupId,
+            'counter' => 0
         ]);
     }
 
