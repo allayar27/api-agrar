@@ -22,19 +22,14 @@ class ImportSchedulesByDayJob implements ShouldQueue
 
     private $groupId;
     private $scheduleId;
-
     private $day;
 
     /**
-     * @param $groupId
-     * @param $scheduleId
-     * @param $day
+     * @param int $groupId
+     * @param int $scheduleId
+     * @param string $day
      */
-    public function __construct(
-        $groupId,
-        $scheduleId,
-        $day,
-    )
+    public function __construct(int $groupId, int $scheduleId, string $day)
     {
         $this->groupId = $groupId;
         $this->scheduleId = $scheduleId;
@@ -44,27 +39,31 @@ class ImportSchedulesByDayJob implements ShouldQueue
     public function handle(): void
     {
         try {
-            $group = Group::query()->findOrFail($this->groupId);
-            $day = $this->day;
-            $day = Carbon::parse($day);
-            $start = Carbon::parse($day)->startOfDay();
-            $end = Carbon::parse($day)->endOfDay();
-            $startTime = $start->timestamp;
-            $endTime = $end->timestamp;
-            $this->fetchScheduleData(groupId: $group->hemis_id, startOfDay: $startTime, endOfDay: $endTime, scheduleId: $this->scheduleId);
+            // Guruhni topish
+            $group = Group::findOrFail($this->groupId);
+
+            // Kunni formatlash va timestampga o'tkazish
+            $day = Carbon::parse($this->day);
+            $startTime = $day->startOfDay()->timestamp;
+            $endTime = $day->endOfDay()->timestamp;
+
+            // Ma'lumotlarni olish
+            $this->fetchScheduleData($group->hemis_id, $startTime, $endTime, $this->scheduleId);
         } catch (Throwable $th) {
             ErrorAddHelper::logException($th);
         }
     }
 
     /**
+     * Dars jadvalini olish va saqlash
+     *
      * @param int|null $groupId
-     * @param string $startOfDay
-     * @param string $endOfDay
+     * @param int $startOfDay
+     * @param int $endOfDay
      * @param int $scheduleId
      * @return void
      */
-    private function fetchScheduleData(?int $groupId, string $startOfDay, string $endOfDay, int $scheduleId): void
+    private function fetchScheduleData(?int $groupId, int $startOfDay, int $endOfDay, int $scheduleId): void
     {
         $response = Http::withHeaders([
             'accept' => 'application/json',
@@ -72,29 +71,46 @@ class ImportSchedulesByDayJob implements ShouldQueue
         ])->get(env('HEMIS_URL') . "schedule-list?page=1&limit=200&_group={$groupId}&lesson_date_from={$startOfDay}&lesson_date_to={$endOfDay}");
 
         if ($response->successful()) {
-            $lessons = $response->json()['data']['items'];
-            if (count($lessons) > 0) {
-                $result = $this->getFirstAndLastElement($lessons);
-                if (count($result) > 0) {
-                    $last = end($result);
-                    StudentScheduleDay::query()->updateOrCreate([
-                        'student_schedule_id' => $scheduleId,
-                        'time_in' => $result[0]['lessonPair']['start_time'],
-                        'time_out' => $last['lessonPair']['end_time'],
-                        'group_id' => $this->groupId,
-                        'day' => Carbon::parse($result['lesson_date'])->format('l'),
-                        'date' => Carbon::parse($result['lesson_date'])->format('Y-m-d'),
-                    ]);
-                }
+            $lessons = $response->json()['data']['items'] ?? [];
 
+            if (!empty($lessons)) {
+                $result = $this->getFirstAndLastElement($lessons);
+                if (!empty($result)) {
+                    $firstLesson = reset($result);
+                    $lastLesson = end($result);
+
+                    // lesson_date noto'g'ri bo'lmasligini tekshirish
+                    $lessonDate = $firstLesson['lesson_date'] ?? null;
+
+                    if ($lessonDate) {
+                        StudentScheduleDay::updateOrCreate([
+                            'student_schedule_id' => $scheduleId,
+                            'group_id' => $this->groupId,
+                            'time_in' => $firstLesson['lessonPair']['start_time'] ?? null,
+                            'time_out' => $lastLesson['lessonPair']['end_time'] ?? null,
+                            'day' => Carbon::parse($lessonDate)->format('l'),
+                            'date' => Carbon::parse($lessonDate)->format('Y-m-d'),
+                        ]);
+                    } else {
+                        Log::warning("lesson_date is missing for group ID: {$groupId}");
+                    }
+                }
             } else {
-                ScheduleService::addNotFoundScheduleById(day: $this->day, groupId: $this->groupId);
-                Log::info('No lessons found for group ID: ' . $groupId . 'on ' . Carbon::createFromTimestamp($startOfDay)->format('Y-m-d'));
+                ScheduleService::addNotFoundScheduleById($this->day, $this->groupId);
+                Log::info("No lessons found for group ID: {$groupId} on " . Carbon::createFromTimestamp($startOfDay)->format('Y-m-d'));
             }
+        } else {
+            Log::error("Failed to fetch schedule for group ID: {$groupId}");
         }
     }
 
-    function getFirstAndLastElement(array $data): array
+    /**
+     * Jadvaldagi birinchi va oxirgi elementni olish
+     *
+     * @param array $data
+     * @return array
+     */
+    private function getFirstAndLastElement(array $data): array
     {
         usort($data, function ($a, $b) {
             return strtotime($a['lessonPair']['start_time']) - strtotime($b['lessonPair']['start_time']);
@@ -103,11 +119,13 @@ class ImportSchedulesByDayJob implements ShouldQueue
     }
 
     /**
+     * Xato bo'lganda log yozish
+     *
      * @param Throwable $exception
      * @return void
      */
     public function failed(Throwable $exception): void
     {
-        Log::error('Job failed for group ID: ' . $this->groupId, ['error' => $exception->getMessage()]);
+        Log::error("Job failed for group ID: {$this->groupId}", ['error' => $exception->getMessage()]);
     }
 }
