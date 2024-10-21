@@ -48,6 +48,7 @@ class ImportSchedulesByDayJob implements ShouldQueue
             $day = $this->day;
             $day = Carbon::parse($day);
             $start = Carbon::parse($day)->startOfDay();
+            Log::info("$start");
             $end = Carbon::parse($day)->endOfDay();
             $startTime = $start->timestamp;
             $endTime = $end->timestamp;
