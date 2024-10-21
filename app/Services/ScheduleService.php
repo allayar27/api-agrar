@@ -14,10 +14,12 @@ class ScheduleService
      */
     public static function addNotFoundScheduleById(string $day, int $groupId): void
     {
+        $students = [];
         ScheduleGroupNotFound::query()->firstOrCreate([
             'day' => $day,
             'group_id' => $groupId,
-            'counter' => 0
+            'counter' => 0,
+            'students' => $students
         ]);
     }
 
