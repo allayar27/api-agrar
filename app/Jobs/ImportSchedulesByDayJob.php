@@ -51,6 +51,7 @@ class ImportSchedulesByDayJob implements ShouldQueue
             $end = Carbon::parse($day)->endOfDay();
             $startTime = $start->timestamp;
             $endTime = $end->timestamp;
+            Log::info($startTime." ".$endTime);
             $this->fetchScheduleData(groupId: $group->hemis_id, startOfDay: $startTime, endOfDay: $endTime, scheduleId: $this->scheduleId);
         } catch (Throwable $th) {
             ErrorAddHelper::logException($th);
