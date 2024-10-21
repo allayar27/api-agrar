@@ -82,11 +82,14 @@ class ImportSchedulesByDayJob implements ShouldQueue
                         StudentScheduleDay::updateOrCreate([
                             'student_schedule_id' => $scheduleId,
                             'group_id' => $this->groupId,
-                            'time_in' => $firstLesson['lessonPair']['start_time'] ?? null,
-                            'time_out' => $lastLesson['lessonPair']['end_time'] ?? null,
                             'day' => Carbon::parse($lessonDate)->format('l'),
                             'date' => Carbon::parse($lessonDate)->format('Y-m-d'),
-                        ]);
+                        ],
+                        [
+                            'time_in' => $firstLesson['lessonPair']['start_time'] ?? null,
+                            'time_out' => $lastLesson['lessonPair']['end_time'] ?? null,
+                            ]
+                        );
                         Log::info($lessonDate);
                     } else {
                         Log::warning("lesson_date is missing for group ID: {$groupId}");
