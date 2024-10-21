@@ -39,15 +39,12 @@ class ImportSchedulesByDayJob implements ShouldQueue
     public function handle(): void
     {
         try {
-            // Guruhni topish
             $group = Group::findOrFail($this->groupId);
 
-            // Kunni formatlash va timestampga o'tkazish
             $day = Carbon::parse($this->day);
             $startTime = $day->startOfDay()->timestamp;
             $endTime = $day->endOfDay()->timestamp;
 
-            // Ma'lumotlarni olish
             $this->fetchScheduleData($group->hemis_id, $startTime, $endTime, $this->scheduleId);
         } catch (Throwable $th) {
             ErrorAddHelper::logException($th);
@@ -79,7 +76,6 @@ class ImportSchedulesByDayJob implements ShouldQueue
                     $firstLesson = reset($result);
                     $lastLesson = end($result);
 
-                    // lesson_date noto'g'ri bo'lmasligini tekshirish
                     $lessonDate = $firstLesson['lesson_date'] ?? null;
 
                     if ($lessonDate) {
@@ -91,6 +87,7 @@ class ImportSchedulesByDayJob implements ShouldQueue
                             'day' => Carbon::parse($lessonDate)->format('l'),
                             'date' => Carbon::parse($lessonDate)->format('Y-m-d'),
                         ]);
+                        Log::info($lessonDate);
                     } else {
                         Log::warning("lesson_date is missing for group ID: {$groupId}");
                     }
